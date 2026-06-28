@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Creator {
+  id                     String   @id @default(auto()) @map("_id") @db.ObjectId
+  instagramHandle        String   @unique
+  fullName               String
+  city                   String
+  area                   String
+  nicheTags              String
+  followerCount          Int
+  avgEngagementRate      Float
+  estimatedRateMin       Int
+  estimatedRateMax       Int
+  contactMethod          String
+  contactValue           String
+  lastVerifiedDate       DateTime
+  profilePicUrl          String
+  accountType            String
+  isVerifiedActive       Boolean  @default(true)
+  recentPostCountChecked Int?
+  avgLikes               Int?
+  avgComments            Int?
+  contentStyle           String?
+  previousBrandCollabs   String?
+  language               String?
+  sourceFound            String?
+  notes                  String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}

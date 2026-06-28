@@ -1,65 +1,108 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useRouter } from "next/navigation";
+import { Search, Shield, MapPin, TrendingUp } from "lucide-react";
+import { SearchFilters } from "@/components/SearchFilters";
+import { useApp } from "@/lib/context";
+
+const STATS = [
+  { icon: Shield, label: "150+ verified creators", sub: "Real profiles, real engagement" },
+  { icon: MapPin, label: "Vasai-Virar focused", sub: "Hyperlocal matching" },
+  { icon: TrendingUp, label: "No bots, no fakes", sub: "Engagement quality checked" },
+];
+
+export default function HomePage() {
+  const router = useRouter();
+  const { filters, updateFilters } = useApp();
+
+  const handleSearch = () => {
+    router.push("/results");
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-[calc(100vh-57px)]">
+      {/* Hero */}
+      <section className="relative overflow-hidden px-4 pb-16 pt-12 sm:px-6 sm:pt-20">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-terracotta-light/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-10 -left-10 h-48 w-48 rounded-full bg-sage-light/30 blur-3xl" />
+
+        <div className="relative mx-auto max-w-4xl text-center">
+          <span className="inline-block rounded-full bg-sage-light/40 px-4 py-1 text-sm font-medium text-sage-dark">
+            Starting in Vasai-Virar · Mumbai
+          </span>
+          <h1 className="mt-6 text-4xl font-bold leading-tight text-warm-brown sm:text-5xl lg:text-6xl">
+            Find Instagram Creators
+            <br />
+            <span className="text-terracotta">Who Fit Your Budget</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-warm-gray">
+            Match your cloud kitchen or small restaurant with hyperlocal
+            micro-influencers — no agency fees, no guesswork. See creators
+            instantly, no signup required.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Search card */}
+        <div className="relative mx-auto mt-10 max-w-2xl">
+          <div className="rounded-3xl border border-cream-dark bg-white p-6 shadow-lg sm:p-8">
+            <SearchFilters filters={filters} onChange={updateFilters} />
+            <button
+              type="button"
+              onClick={handleSearch}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-terracotta py-4 text-lg font-bold text-white transition-colors hover:bg-terracotta-dark"
+            >
+              <Search className="h-5 w-5" />
+              Find Creators
+            </button>
+            <p className="mt-3 text-center text-xs text-warm-gray">
+              Preview results free · Sign up only to unlock contact & outreach
+            </p>
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* Trust stats */}
+      <section className="border-t border-cream-dark bg-white px-4 py-14 sm:px-6">
+        <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-3">
+          {STATS.map(({ icon: Icon, label, sub }) => (
+            <div
+              key={label}
+              className="rounded-2xl border border-cream-dark bg-cream p-6 text-center"
+            >
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-terracotta/10">
+                <Icon className="h-6 w-6 text-terracotta" />
+              </div>
+              <h3 className="font-bold text-warm-brown">{label}</h3>
+              <p className="mt-1 text-sm text-warm-gray">{sub}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="px-4 py-14 sm:px-6">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-2xl font-bold text-warm-brown">Built for small businesses</h2>
+          <p className="mt-3 text-warm-gray">
+            Cloud kitchens, bakeries, dessert shops, and boutique cafes — find
+            creators who actually reach your local customers in Vasai, Virar,
+            and Nalasopara.
+          </p>
+          <div className="mt-10 grid gap-4 text-left sm:grid-cols-3">
+            {[
+              { step: "1", title: "Set your budget", desc: "₹500 to ₹10,000+ per post" },
+              { step: "2", title: "Browse & shortlist", desc: "Filter by niche, followers, area" },
+              { step: "3", title: "Reach out", desc: "Auto-drafted DMs, track responses" },
+            ].map(({ step, title, desc }) => (
+              <div key={step} className="rounded-2xl bg-white p-5 shadow-sm">
+                <span className="text-3xl font-bold text-terracotta-light">{step}</span>
+                <h3 className="mt-2 font-semibold text-warm-brown">{title}</h3>
+                <p className="mt-1 text-sm text-warm-gray">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
