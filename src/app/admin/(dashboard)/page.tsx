@@ -213,7 +213,12 @@ export default function AdminDashboardPage() {
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full">
-                          <CreatorAvatar src={c.profilePicUrl} alt={c.fullName} fill />
+                          <CreatorAvatar
+                            src={c.profilePicUrl}
+                            alt={c.fullName}
+                            handle={c.instagramHandle}
+                            fill
+                          />
                         </div>
                         <div>
                           <p className="font-semibold">@{c.instagramHandle}</p>

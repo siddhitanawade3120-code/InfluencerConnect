@@ -48,7 +48,12 @@ export function CreatorCard({ creator }: CreatorCardProps) {
         <div className="p-5">
           <div className="flex items-start gap-4">
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-cream-dark">
-              <CreatorAvatar src={creator.profilePicUrl} alt={creator.fullName} fill />
+              <CreatorAvatar
+                src={creator.profilePicUrl}
+                alt={creator.fullName}
+                handle={creator.instagramHandle}
+                fill
+              />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
@@ -166,7 +171,12 @@ export function CreatorCard({ creator }: CreatorCardProps) {
           >
             <div className="flex items-center gap-4">
               <div className="relative h-16 w-16 overflow-hidden rounded-full">
-                <CreatorAvatar src={creator.profilePicUrl} alt={creator.fullName} fill />
+                <CreatorAvatar
+                src={creator.profilePicUrl}
+                alt={creator.fullName}
+                handle={creator.instagramHandle}
+                fill
+              />
               </div>
               <div>
                 <h3 className="text-xl font-bold">@{creator.instagramHandle}</h3>

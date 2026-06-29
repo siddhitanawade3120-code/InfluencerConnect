@@ -227,7 +227,12 @@ export default function ShortlistPage() {
                 <td className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="relative h-10 w-10 overflow-hidden rounded-full">
-                      <CreatorAvatar src={creator.profilePicUrl} alt={creator.fullName} fill />
+                      <CreatorAvatar
+                        src={creator.profilePicUrl}
+                        alt={creator.fullName}
+                        handle={creator.instagramHandle}
+                        fill
+                      />
                     </div>
                     <div>
                       <p className="font-semibold">@{creator.instagramHandle}</p>
@@ -302,7 +307,12 @@ export default function ShortlistPage() {
                 className="mt-1 h-4 w-4 rounded accent-terracotta"
               />
               <div className="relative h-12 w-12 overflow-hidden rounded-full">
-                <CreatorAvatar src={creator.profilePicUrl} alt={creator.fullName} fill />
+                <CreatorAvatar
+                  src={creator.profilePicUrl}
+                  alt={creator.fullName}
+                  handle={creator.instagramHandle}
+                  fill
+                />
               </div>
               <div className="flex-1">
                 <p className="font-semibold">@{creator.instagramHandle}</p>

@@ -1,17 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import { proxiedImageUrl } from "@/lib/proxy-image";
 
 interface CreatorAvatarProps {
   src: string;
   alt: string;
+  handle?: string;
   className?: string;
   fill?: boolean;
   size?: number;
 }
 
-export function CreatorAvatar({ src, alt, className = "", fill, size = 56 }: CreatorAvatarProps) {
-  const url = proxiedImageUrl(src);
+function fallbackAvatarUrl(handle?: string, alt?: string): string {
+  const seed = encodeURIComponent(handle || alt || "creator");
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=c4705a,8b9a7d,d4a574&fontFamily=DM%20Sans`;
+}
+
+export function CreatorAvatar({
+  src,
+  alt,
+  handle,
+  className = "",
+  fill,
+  size = 56,
+}: CreatorAvatarProps) {
+  const [failed, setFailed] = useState(false);
+  const url = failed || !src ? fallbackAvatarUrl(handle, alt) : proxiedImageUrl(src);
+
+  const imgClass = fill ? `h-full w-full object-cover ${className}` : className;
 
   if (fill) {
     return (
@@ -19,8 +36,9 @@ export function CreatorAvatar({ src, alt, className = "", fill, size = 56 }: Cre
       <img
         src={url}
         alt={alt}
-        className={`h-full w-full object-cover ${className}`}
+        className={imgClass}
         loading="lazy"
+        onError={() => setFailed(true)}
       />
     );
   }
@@ -34,6 +52,7 @@ export function CreatorAvatar({ src, alt, className = "", fill, size = 56 }: Cre
       height={size}
       className={className}
       loading="lazy"
+      onError={() => setFailed(true)}
     />
   );
 }
