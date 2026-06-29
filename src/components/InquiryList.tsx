@@ -33,21 +33,22 @@ export function InquiryList({ role, emptyMessage }: InquiryListProps) {
   if (loading) {
     return (
       <div className="flex justify-center py-12 text-warm-gray">
-        <Loader2 className="h-6 w-6 animate-spin" />
+        <Loader2 className="h-6 w-6 animate-spin text-terracotta" />
       </div>
     );
   }
 
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>;
+    return <p className="p-6 text-sm text-red-600">{error}</p>;
   }
 
   if (unlinked) {
     return (
-      <div className="rounded-2xl border border-dashed border-cream-dark bg-cream/50 p-6 text-sm text-warm-gray">
-        <p className="font-medium text-warm-brown">Profile not linked yet</p>
-        <p className="mt-1">
+      <div className="p-6 text-sm text-warm-gray">
+        <p className="font-semibold text-warm-brown">Profile not linked yet</p>
+        <p className="mt-2 leading-relaxed">
           Deal requests appear here once your Instagram handle is linked to a directory profile.
+          Check your creator dashboard for linking status.
         </p>
       </div>
     );
@@ -55,19 +56,20 @@ export function InquiryList({ role, emptyMessage }: InquiryListProps) {
 
   if (inquiries.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-cream-dark bg-cream/50 p-6 text-sm text-warm-gray">
-        {emptyMessage}
+      <div className="p-8 text-center text-sm text-warm-gray">
+        <p className="text-base font-medium text-warm-brown">No deals yet</p>
+        <p className="mt-2 leading-relaxed">{emptyMessage}</p>
       </div>
     );
   }
 
   return (
-    <ul className="space-y-3">
+    <ul className="divide-y divide-cream-dark">
       {inquiries.map((inquiry) => (
         <li key={inquiry.id}>
           <Link
             href={`/dashboard/inquiries/${inquiry.id}`}
-            className="flex items-center gap-4 rounded-2xl border border-cream-dark bg-white p-4 transition-shadow hover:shadow-md"
+            className="flex items-center gap-4 p-4 transition-colors hover:bg-cream/50"
           >
             {role === "brand" && inquiry.creator && (
               <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full">

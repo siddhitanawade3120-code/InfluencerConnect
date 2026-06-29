@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { SlidersHorizontal, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
+import { SlidersHorizontal, ArrowLeft, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import { SearchFilters } from "@/components/SearchFilters";
 import { CreatorCard } from "@/components/CreatorCard";
 import { useApp } from "@/lib/context";
@@ -42,9 +42,30 @@ export default function ResultsPage() {
     [creators, sort]
   );
 
+  const showSignupBanner = !authLoading && !user;
+
   return (
-    <div className="min-h-[calc(100vh-57px)]">
+    <div className="page-gradient min-h-[calc(100vh-57px)]">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        {showSignupBanner && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-terracotta/20 bg-gradient-to-r from-terracotta/10 to-sage-light/20 px-5 py-4">
+            <div className="flex items-start gap-3">
+              <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-terracotta" />
+              <div>
+                <p className="font-semibold text-warm-brown">
+                  Sign up free to send deal requests
+                </p>
+                <p className="text-sm text-warm-gray">
+                  Browse now — create a brand account to contact creators and negotiate deals.
+                </p>
+              </div>
+            </div>
+            <Link href="/signup/brand" className="btn-primary shrink-0 !py-2 !text-sm">
+              Create brand account
+            </Link>
+          </div>
+        )}
+
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <Link
@@ -126,7 +147,7 @@ export default function ResultsPage() {
               mobileFiltersOpen ? "block" : "hidden"
             } w-full shrink-0 lg:block lg:w-72`}
           >
-            <div className="sticky top-[73px] rounded-2xl border border-cream-dark bg-white p-5 shadow-sm">
+            <div className="card sticky top-[73px] !p-5">
               <h2 className="mb-4 font-semibold text-warm-brown">Refine search</h2>
               <SearchFilters filters={filters} onChange={updateFilters} compact />
             </div>
@@ -138,7 +159,7 @@ export default function ResultsPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-terracotta" />
               </div>
             ) : fetchError ? null : results.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-cream-dark bg-white p-12 text-center">
+              <div className="card p-12 text-center">
                 <p className="text-lg font-medium text-warm-brown">
                   No creators match your filters
                 </p>
@@ -146,11 +167,7 @@ export default function ResultsPage() {
                   Try widening your budget range, selecting more follower tiers, or choosing
                   &quot;All Mumbai&quot; for area.
                 </p>
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="mt-4 inline-block rounded-xl bg-terracotta px-6 py-2.5 text-sm font-semibold text-white hover:bg-terracotta-dark"
-                >
+                <button type="button" onClick={resetFilters} className="btn-primary mt-4 !text-sm">
                   Reset filters
                 </button>
                 <Link href="/" className="mt-4 block text-terracotta hover:underline">

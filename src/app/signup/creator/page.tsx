@@ -6,8 +6,7 @@ import { useState } from "react";
 
 import { useApp } from "@/lib/context";
 
-const inputClass =
-  "w-full rounded-xl border border-cream-dark px-4 py-2.5 focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/20";
+const inputClass = "input-field !py-2.5";
 
 export default function CreatorSignupPage() {
   const router = useRouter();
@@ -46,16 +45,17 @@ export default function CreatorSignupPage() {
   };
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-10">
-      <Link href="/signup" className="text-sm text-warm-gray hover:text-terracotta">
-        ← Back
+    <div className="page-gradient mx-auto max-w-lg px-4 py-10">
+      <Link href="/signup" className="text-sm font-medium text-warm-gray hover:text-terracotta">
+        ← Back to account type
       </Link>
-      <h1 className="mt-4 text-2xl font-bold text-warm-brown">Creator signup</h1>
-      <p className="mt-2 text-sm text-warm-gray">
-        Use your Instagram handle — we&apos;ll link your account if an admin has already added your profile.
+      <h1 className="mt-6 text-2xl font-bold text-warm-brown">Join as a creator</h1>
+      <p className="mt-2 text-sm leading-relaxed text-warm-gray">
+        Use your Instagram handle — we&apos;ll link your account if you&apos;re already in our directory.
+        Brands will send deals directly to your dashboard.
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+      <form onSubmit={handleSubmit} className="card mt-8 space-y-4 !p-6 sm:!p-8">
         <div>
           <label className="mb-1 block text-sm font-medium">Full name</label>
           <input required className={inputClass} value={form.name}
@@ -90,9 +90,10 @@ export default function CreatorSignupPage() {
           <textarea rows={3} className={inputClass} value={form.bio}
             onChange={(e) => setForm({ ...form, bio: e.target.value })} />
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" disabled={loading}
-          className="w-full rounded-xl bg-terracotta py-3 font-semibold text-white hover:bg-terracotta-dark disabled:opacity-50">
+        {error && (
+          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        )}
+        <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? "Creating account…" : "Create creator account"}
         </button>
       </form>

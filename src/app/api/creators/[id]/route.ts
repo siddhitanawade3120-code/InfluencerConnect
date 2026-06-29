@@ -8,6 +8,12 @@ import {
 } from "@/lib/mongodb";
 import { inputToDbData, parseJsonArray, type CreatorInput } from "@/lib/creator-mapper";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { getCurrentUser } from "@/lib/auth";
+import {
+  canViewCreatorProfile,
+  redactCreatorContact,
+  shouldShowCreatorContact,
+} from "@/lib/marketplace-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +34,19 @@ export async function GET(_request: Request, { params }: Params) {
     );
 
     if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(docToCreator(doc));
+
+    const user = await getCurrentUser();
+    if (!canViewCreatorProfile(user, id)) {
+      return NextResponse.json(
+        { error: "Creator profiles are only visible to brand accounts" },
+        { status: 403 }
+      );
+    }
+
+    const creator = docToCreator(doc);
+    return NextResponse.json(
+      redactCreatorContact(creator, shouldShowCreatorContact(user))
+    );
   } catch (err) {
     console.error("GET /api/creators/[id]:", err);
     return NextResponse.json({ error: "Database unavailable" }, { status: 503 });

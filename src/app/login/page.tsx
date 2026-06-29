@@ -3,11 +3,8 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
-import { LogIn } from "lucide-react";
+import { LogIn, Building2, Camera } from "lucide-react";
 import { useApp } from "@/lib/context";
-
-const inputClass =
-  "w-full rounded-xl border border-cream-dark px-4 py-3 focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/20";
 
 function LoginForm() {
   const router = useRouter();
@@ -42,32 +39,74 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-57px)] items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-cream-dark bg-white p-8 shadow-lg">
-        <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-terracotta/10">
-          <LogIn className="h-6 w-6 text-terracotta" />
+    <div className="page-gradient flex min-h-[calc(100vh-57px)] items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="card shadow-lg">
+          <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-terracotta/15 to-sage-light/30">
+            <LogIn className="h-7 w-7 text-terracotta" />
+          </div>
+          <h1 className="text-2xl font-bold text-warm-brown">Welcome back</h1>
+          <p className="mt-2 text-sm leading-relaxed text-warm-gray">
+            Sign in to your brand or creator account. We&apos;ll take you to the right dashboard.
+          </p>
+
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+            <div>
+              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-warm-brown">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                placeholder="you@business.com"
+                className="input-field"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-warm-brown">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                placeholder="••••••••"
+                className="input-field"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            {error && (
+              <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+            )}
+            <button type="submit" disabled={loading} className="btn-primary w-full">
+              {loading ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+
+          <div className="mt-8 border-t border-cream-dark pt-6">
+            <p className="text-center text-sm text-warm-gray">New to InfluConnect?</p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <Link
+                href="/signup/brand"
+                className="flex flex-col items-center gap-2 rounded-xl border border-cream-dark p-4 text-center text-sm font-medium text-warm-brown transition-colors hover:border-terracotta-light hover:bg-cream"
+              >
+                <Building2 className="h-5 w-5 text-terracotta" />
+                Brand
+              </Link>
+              <Link
+                href="/signup/creator"
+                className="flex flex-col items-center gap-2 rounded-xl border border-cream-dark p-4 text-center text-sm font-medium text-warm-brown transition-colors hover:border-sage hover:bg-cream"
+              >
+                <Camera className="h-5 w-5 text-sage-dark" />
+                Creator
+              </Link>
+            </div>
+          </div>
         </div>
-        <h1 className="text-xl font-bold text-warm-brown">Log in</h1>
-        <p className="mt-2 text-sm text-warm-gray">
-          Brands and creators use the same login. You&apos;ll be sent to your dashboard.
-        </p>
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <input type="email" required placeholder="Email" className={inputClass}
-            value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input type="password" required placeholder="Password" className={inputClass}
-            value={password} onChange={(e) => setPassword(e.target.value)} />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={loading}
-            className="w-full rounded-xl bg-terracotta py-3 font-semibold text-white hover:bg-terracotta-dark disabled:opacity-50">
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-        <p className="mt-6 text-center text-sm text-warm-gray">
-          No account?{" "}
-          <Link href="/signup" className="font-medium text-terracotta hover:underline">
-            Sign up
-          </Link>
-        </p>
       </div>
     </div>
   );
@@ -75,7 +114,13 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-[calc(100vh-57px)] items-center justify-center">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-[calc(100vh-57px)] items-center justify-center text-warm-gray">
+          Loading…
+        </div>
+      }
+    >
       <LoginForm />
     </Suspense>
   );

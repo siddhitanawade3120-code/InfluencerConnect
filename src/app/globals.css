@@ -14,7 +14,77 @@
   --font-sans: var(--font-dm-sans);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--color-cream);
   color: var(--color-warm-brown);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-terracotta) 25%, transparent);
+}
+
+/* Reusable form + button patterns */
+.input-field {
+  @apply w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-warm-brown transition-colors placeholder:text-warm-gray/60 focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/20;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-terracotta px-5 py-3 font-semibold text-white transition-all hover:bg-terracotta-dark hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-cream-dark bg-white px-5 py-3 font-semibold text-warm-brown transition-colors hover:border-terracotta-light hover:bg-cream;
+}
+
+.card {
+  @apply rounded-2xl border border-cream-dark bg-white p-6 shadow-sm;
+}
+
+.card-hover {
+  @apply transition-all hover:border-terracotta-light/50 hover:shadow-md;
+}
+
+/* Subtle page background pattern */
+.page-gradient {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, color-mix(in srgb, var(--color-terracotta-light) 18%, transparent), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, color-mix(in srgb, var(--color-sage-light) 20%, transparent), transparent),
+    var(--color-cream);
+}
+
+/* Range slider thumb */
+input[type="range"]::-webkit-slider-thumb {
+  @apply h-4 w-4 cursor-pointer appearance-none rounded-full bg-terracotta shadow-sm;
+}
+
+input[type="range"]::-moz-range-thumb {
+  @apply h-4 w-4 cursor-pointer rounded-full border-0 bg-terracotta shadow-sm;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
+}
+
+.animate-fade-up-delay-1 {
+  animation: fade-up 0.5s ease-out 0.1s both;
+}
+
+.animate-fade-up-delay-2 {
+  animation: fade-up 0.5s ease-out 0.2s both;
 }

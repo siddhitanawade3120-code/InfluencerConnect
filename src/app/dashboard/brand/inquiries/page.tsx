@@ -10,7 +10,7 @@ export default async function BrandInquiriesPage() {
   if (user.role !== "BRAND") redirect("/dashboard/creator/inquiries");
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="page-gradient mx-auto max-w-3xl px-4 py-10 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link
@@ -27,18 +27,15 @@ export default async function BrandInquiriesPage() {
         <LogoutButton />
       </div>
 
-      <div className="mt-8">
+      <div className="card mt-8 !p-0 overflow-hidden">
         <InquiryList
           role="brand"
           emptyMessage="No deal requests yet. Browse creators and send your first collab offer."
         />
       </div>
 
-      <Link
-        href="/results"
-        className="mt-6 inline-block text-sm font-medium text-terracotta hover:underline"
-      >
-        Browse creators →
+      <Link href="/results" className="btn-primary mt-6 !text-sm">
+        Find creators to collaborate with
       </Link>
     </div>
   );

@@ -21,6 +21,7 @@ export function CreatorProfileActions({ creator }: CreatorProfileActionsProps) {
   const [showDealModal, setShowDealModal] = useState(false);
   const shortlisted = isInShortlist(creator.id);
   const isBrand = user?.role === "BRAND";
+  const isCreator = user?.role === "CREATOR";
 
   const handleShortlist = () => {
     if (shortlisted) removeFromShortlist(creator.id);
@@ -52,9 +53,11 @@ export function CreatorProfileActions({ creator }: CreatorProfileActionsProps) {
             <Handshake className="h-4 w-4" />
             Send Deal Request
           </button>
-        ) : (
+        ) : null}
+
+        {isCreator && (
           <p className="rounded-xl border border-cream-dark bg-cream/50 px-4 py-3 text-center text-sm text-warm-gray">
-            Deal requests are sent by brand accounts.{" "}
+            This page is for brands.{" "}
             <Link href="/dashboard/creator/inquiries" className="text-terracotta hover:underline">
               View your incoming deals
             </Link>
@@ -77,25 +80,27 @@ export function CreatorProfileActions({ creator }: CreatorProfileActionsProps) {
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={handleShortlist}
-          className={`flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-colors ${
-            shortlisted
-              ? "border-sage bg-sage text-white"
-              : "border-cream-dark bg-white text-warm-gray hover:border-terracotta-light hover:text-terracotta"
-          }`}
-        >
-          {shortlisted ? (
-            <>
-              <Check className="h-4 w-4" /> On your shortlist
-            </>
-          ) : (
-            <>
-              <UserPlus className="h-4 w-4" /> Add to Shortlist
-            </>
-          )}
-        </button>
+        {!isCreator && (
+          <button
+            type="button"
+            onClick={handleShortlist}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-colors ${
+              shortlisted
+                ? "border-sage bg-sage text-white"
+                : "border-cream-dark bg-white text-warm-gray hover:border-terracotta-light hover:text-terracotta"
+            }`}
+          >
+            {shortlisted ? (
+              <>
+                <Check className="h-4 w-4" /> On your shortlist
+              </>
+            ) : (
+              <>
+                <UserPlus className="h-4 w-4" /> Add to Shortlist
+              </>
+            )}
+          </button>
+        )}
 
         <Link
           href={instagramProfileUrl(creator.instagramHandle)}

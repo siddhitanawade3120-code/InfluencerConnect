@@ -10,7 +10,7 @@ export default async function CreatorInquiriesPage() {
   if (user.role !== "CREATOR") redirect("/dashboard/brand/inquiries");
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="page-gradient mx-auto max-w-3xl px-4 py-10 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link
@@ -27,7 +27,7 @@ export default async function CreatorInquiriesPage() {
         <LogoutButton />
       </div>
 
-      <div className="mt-8">
+      <div className="card mt-8 !p-0 overflow-hidden">
         <InquiryList
           role="creator"
           emptyMessage="No deal requests yet. When a brand sends you an offer, it will appear here."

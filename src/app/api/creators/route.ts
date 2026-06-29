@@ -13,6 +13,11 @@ import {
   parseCreatorListQuery,
 } from "@/lib/creator-query";
 import { sortCreatorsByMatchScore } from "@/lib/match-score";
+import {
+  canBrowseCreatorDirectory,
+  redactCreatorContact,
+  shouldShowCreatorContact,
+} from "@/lib/marketplace-access";
 import type { Creator } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -36,6 +41,14 @@ function dbErrorResponse(err: unknown) {
 
 export async function GET(request: Request) {
   try {
+    const user = await getCurrentUser();
+    if (!canBrowseCreatorDirectory(user)) {
+      return NextResponse.json(
+        { error: "Creator search is only available to brand accounts" },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const listQuery = parseCreatorListQuery(searchParams);
     const filter = buildMongoCreatorFilter(listQuery);
@@ -45,8 +58,8 @@ export async function GET(request: Request) {
     );
 
     let creators: Creator[] = rows.map(docToCreator);
+    const showContact = shouldShowCreatorContact(user);
 
-    const user = await getCurrentUser();
     const brandProfile =
       user?.role === "BRAND" ? user.brandProfile : null;
 
@@ -59,7 +72,9 @@ export async function GET(request: Request) {
       creators.sort((a, b) => b.followerCount - a.followerCount);
     }
 
-    return NextResponse.json(creators);
+    return NextResponse.json(
+      creators.map((c) => redactCreatorContact(c, showContact))
+    );
   } catch (err) {
     console.error("GET /api/creators:", err);
     return dbErrorResponse(err);

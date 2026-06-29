@@ -43,10 +43,10 @@ model CreatorProfile {
   id              String  @id @default(auto()) @map("_id") @db.ObjectId
   userId          String  @unique @db.ObjectId
   user            User    @relation(fields: [userId], references: [id])
-  instagramHandle String
+  instagramHandle String  @unique
   bio             String?
   /// Optional link to admin-added Creator record (claimed profile)
-  creatorId       String? @db.ObjectId
+  creatorId       String? @unique @db.ObjectId
 }
 
 model Creator {

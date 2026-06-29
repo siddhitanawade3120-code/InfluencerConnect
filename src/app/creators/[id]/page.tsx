@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -17,6 +17,7 @@ import {
 } from "@/lib/mongodb";
 import { getCurrentUser } from "@/lib/auth";
 import { computeMatchScore } from "@/lib/match-score";
+import { canViewCreatorProfile } from "@/lib/marketplace-access";
 import {
   formatFollowers,
   formatRate,
@@ -44,11 +45,15 @@ export default async function CreatorProfilePage({ params }: PageProps) {
 
   if (!doc) notFound();
 
+  const user = await getCurrentUser();
+  if (!canViewCreatorProfile(user, id)) {
+    redirect("/dashboard/creator");
+  }
+
   const creator = docToCreator(doc);
   const fresh = isRecentlyVerified(creator.lastVerifiedDate);
   const tier = FOLLOWER_TIERS.find((t) => t.id === getFollowerTier(creator.followerCount));
 
-  const user = await getCurrentUser();
   const brandProfile = user?.role === "BRAND" ? user.brandProfile : null;
   const matchScore = brandProfile
     ? computeMatchScore(creator, {

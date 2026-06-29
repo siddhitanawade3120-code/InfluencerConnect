@@ -38,9 +38,34 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email already registered" }, { status: 409 });
     }
 
+    const handleTaken = await prisma.creatorProfile.findUnique({
+      where: { instagramHandle },
+    });
+    if (handleTaken) {
+      return NextResponse.json(
+        { error: "This Instagram handle is already registered to another account" },
+        { status: 409 }
+      );
+    }
+
     const matchedCreator = await prisma.creator.findUnique({
       where: { instagramHandle },
     });
+
+    if (matchedCreator) {
+      const alreadyClaimed = await prisma.creatorProfile.findFirst({
+        where: { creatorId: matchedCreator.id },
+      });
+      if (alreadyClaimed) {
+        return NextResponse.json(
+          {
+            error:
+              "This creator profile has already been claimed. Contact support if this is your account.",
+          },
+          { status: 409 }
+        );
+      }
+    }
 
     const passwordHash = await hashPassword(password);
 

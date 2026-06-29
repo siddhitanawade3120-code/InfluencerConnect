@@ -15,8 +15,7 @@ const CATEGORIES = [
   "Other",
 ];
 
-const inputClass =
-  "w-full rounded-xl border border-cream-dark px-4 py-2.5 focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/20";
+const inputClass = "input-field !py-2.5";
 
 export default function BrandSignupPage() {
   const router = useRouter();
@@ -60,16 +59,16 @@ export default function BrandSignupPage() {
   };
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-10">
-      <Link href="/signup" className="text-sm text-warm-gray hover:text-terracotta">
-        ← Back
+    <div className="page-gradient mx-auto max-w-lg px-4 py-10">
+      <Link href="/signup" className="text-sm font-medium text-warm-gray hover:text-terracotta">
+        ← Back to account type
       </Link>
-      <h1 className="mt-4 text-2xl font-bold text-warm-brown">Brand signup</h1>
-      <p className="mt-2 text-sm text-warm-gray">
-        Tell us about your business so we can match you with the right creators.
+      <h1 className="mt-6 text-2xl font-bold text-warm-brown">Create your brand account</h1>
+      <p className="mt-2 text-sm leading-relaxed text-warm-gray">
+        Tell us about your business so we can match you with the right creators in your area.
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+      <form onSubmit={handleSubmit} className="card mt-8 space-y-4 !p-6 sm:!p-8">
         <div>
           <label className="mb-1 block text-sm font-medium">Your name</label>
           <input required className={inputClass} value={form.name}
@@ -141,9 +140,10 @@ export default function BrandSignupPage() {
           <input type="url" className={inputClass} value={form.website}
             onChange={(e) => setForm({ ...form, website: e.target.value })} />
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" disabled={loading}
-          className="w-full rounded-xl bg-terracotta py-3 font-semibold text-white hover:bg-terracotta-dark disabled:opacity-50">
+        {error && (
+          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        )}
+        <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? "Creating account…" : "Create brand account"}
         </button>
       </form>
