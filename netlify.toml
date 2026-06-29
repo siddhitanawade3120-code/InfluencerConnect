@@ -1,0 +1,10 @@
+# Next.js App Router — requires @netlify/plugin-nextjs (see package.json)
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
