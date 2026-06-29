@@ -112,6 +112,8 @@ export default function ResultsPage() {
               {filters.budgetMin > 500 || filters.budgetMax < 10000
                 ? ` · ₹${filters.budgetMin.toLocaleString("en-IN")}–₹${filters.budgetMax.toLocaleString("en-IN")}`
                 : ""}
+              {(filters.followerMin > 0 || filters.followerMax < 500_000) &&
+                ` · ${filters.followerMin.toLocaleString("en-IN")}–${filters.followerMax.toLocaleString("en-IN")} followers`}
             </p>
           </div>
 

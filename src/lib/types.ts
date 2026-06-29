@@ -45,6 +45,9 @@ export interface SearchFilters {
   niches: Niche[];
   budgetMin: number;
   budgetMax: number;
+  followerMin: number;
+  followerMax: number;
+  /** @deprecated UI presets only — API uses followerMin/Max */
   followerTiers: FollowerTier[];
 }
 
@@ -105,7 +108,9 @@ export const DEFAULT_FILTERS: SearchFilters = {
   niches: [],
   budgetMin: 500,
   budgetMax: 10000,
-  followerTiers: ["nano", "micro"],
+  followerMin: 0,
+  followerMax: 500_000,
+  followerTiers: [],
 };
 
 export function formatFollowers(count: number): string {
@@ -165,11 +170,7 @@ export function filterCreators(
       c.estimatedRateMin > filters.budgetMax
     )
       return false;
-    const tier = getFollowerTier(c.followerCount);
-    if (
-      filters.followerTiers.length > 0 &&
-      !filters.followerTiers.includes(tier)
-    )
+    if (c.followerCount < filters.followerMin || c.followerCount > filters.followerMax)
       return false;
     return true;
   });

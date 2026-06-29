@@ -22,8 +22,40 @@ export interface CreatorListQuery {
   niches?: Niche[];
   budgetMin?: number;
   budgetMax?: number;
+  followerMin?: number;
+  followerMax?: number;
   followerTiers?: FollowerTier[];
   activeOnly?: boolean;
+}
+
+function applyFollowerRangeFilter(
+  parts: Filter<Document>[],
+  followerMin?: number,
+  followerMax?: number
+): void {
+  if (followerMin != null && Number.isFinite(followerMin) && followerMin > 0) {
+    parts.push({ followerCount: { $gte: followerMin } });
+  }
+  if (followerMax != null && Number.isFinite(followerMax)) {
+    parts.push({ followerCount: { $lte: followerMax } });
+  }
+}
+
+function applyFollowerRangePrisma(
+  and: Prisma.CreatorWhereInput[],
+  followerMin?: number,
+  followerMax?: number
+): void {
+  const followerCount: Prisma.IntFilter = {};
+  if (followerMin != null && Number.isFinite(followerMin) && followerMin > 0) {
+    followerCount.gte = followerMin;
+  }
+  if (followerMax != null && Number.isFinite(followerMax)) {
+    followerCount.lte = followerMax;
+  }
+  if (Object.keys(followerCount).length > 0) {
+    and.push({ followerCount });
+  }
 }
 
 export function areasForFilter(area: string): string[] {
@@ -82,7 +114,9 @@ export function buildMongoCreatorFilter(query: CreatorListQuery): Filter<Documen
     });
   }
 
-  if (query.followerTiers?.length) {
+  if (query.followerMin != null || query.followerMax != null) {
+    applyFollowerRangeFilter(parts, query.followerMin, query.followerMax);
+  } else if (query.followerTiers?.length) {
     const tierConditions = followerTierMongoConditions(query.followerTiers);
     if (tierConditions.length) {
       parts.push({ $or: tierConditions });
@@ -146,7 +180,9 @@ export function buildPrismaCreatorWhere(
     });
   }
 
-  if (query.followerTiers?.length) {
+  if (query.followerMin != null || query.followerMax != null) {
+    applyFollowerRangePrisma(and, query.followerMin, query.followerMax);
+  } else if (query.followerTiers?.length) {
     const tierConditions = followerTierPrismaConditions(query.followerTiers);
     if (tierConditions.length) {
       and.push({ OR: tierConditions });
@@ -174,6 +210,9 @@ export function parseCreatorListQuery(searchParams: URLSearchParams): CreatorLis
     ? (tiersRaw.split(",").filter(Boolean) as FollowerTier[])
     : undefined;
 
+  const followerMin = parseInt(searchParams.get("followerMin") ?? "", 10);
+  const followerMax = parseInt(searchParams.get("followerMax") ?? "", 10);
+
   return {
     activeOnly,
     city: city || undefined,
@@ -181,6 +220,8 @@ export function parseCreatorListQuery(searchParams: URLSearchParams): CreatorLis
     niches: niches?.length ? niches : undefined,
     budgetMin: Number.isFinite(budgetMin) ? budgetMin : undefined,
     budgetMax: Number.isFinite(budgetMax) ? budgetMax : undefined,
+    followerMin: Number.isFinite(followerMin) ? followerMin : undefined,
+    followerMax: Number.isFinite(followerMax) ? followerMax : undefined,
     followerTiers: followerTiers?.length ? followerTiers : undefined,
   };
 }
@@ -196,6 +237,8 @@ export function filtersToSearchParams(
   if (filters.niches.length) params.set("niches", filters.niches.join(","));
   params.set("budgetMin", String(filters.budgetMin));
   params.set("budgetMax", String(filters.budgetMax));
+  params.set("followerMin", String(filters.followerMin));
+  params.set("followerMax", String(filters.followerMax));
   if (filters.followerTiers.length) {
     params.set("followerTiers", filters.followerTiers.join(","));
   }
@@ -210,6 +253,8 @@ export function searchFiltersToListQuery(filters: SearchFilters): CreatorListQue
     niches: filters.niches.length ? filters.niches : undefined,
     budgetMin: filters.budgetMin,
     budgetMax: filters.budgetMax,
+    followerMin: filters.followerMin,
+    followerMax: filters.followerMax,
     followerTiers: filters.followerTiers.length ? filters.followerTiers : undefined,
   };
 }

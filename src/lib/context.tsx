@@ -65,9 +65,9 @@ function mergeFilters(stored: Partial<SearchFilters> | undefined): SearchFilters
     ...DEFAULT_FILTERS,
     ...stored,
     niches: stored.niches ?? DEFAULT_FILTERS.niches,
-    followerTiers: stored.followerTiers?.length
-      ? stored.followerTiers
-      : DEFAULT_FILTERS.followerTiers,
+    followerMin: stored.followerMin ?? DEFAULT_FILTERS.followerMin,
+    followerMax: stored.followerMax ?? DEFAULT_FILTERS.followerMax,
+    followerTiers: stored.followerTiers ?? DEFAULT_FILTERS.followerTiers,
   };
 }
 
