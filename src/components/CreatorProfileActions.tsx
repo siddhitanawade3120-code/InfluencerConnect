@@ -6,6 +6,7 @@ import { UserPlus, Check, Handshake } from "lucide-react";
 import type { Creator } from "@/lib/types";
 import { useApp } from "@/lib/context";
 import { SignupModal } from "./SignupModal";
+import { DealRequestModal } from "./DealRequestModal";
 import { InstagramDmButton } from "./InstagramDmButton";
 import { instagramProfileUrl } from "@/lib/instagram-links";
 
@@ -14,11 +15,12 @@ interface CreatorProfileActionsProps {
 }
 
 export function CreatorProfileActions({ creator }: CreatorProfileActionsProps) {
-  const { isInShortlist, addToShortlist, removeFromShortlist, isSignedUp, authLoading } =
+  const { isInShortlist, addToShortlist, removeFromShortlist, isSignedUp, authLoading, user } =
     useApp();
   const [showSignup, setShowSignup] = useState(false);
-  const [dealRequested, setDealRequested] = useState(false);
+  const [showDealModal, setShowDealModal] = useState(false);
   const shortlisted = isInShortlist(creator.id);
+  const isBrand = user?.role === "BRAND";
 
   const handleShortlist = () => {
     if (shortlisted) removeFromShortlist(creator.id);
@@ -31,21 +33,33 @@ export function CreatorProfileActions({ creator }: CreatorProfileActionsProps) {
       setShowSignup(true);
       return;
     }
-    setDealRequested(true);
+    if (!isBrand) {
+      return;
+    }
+    setShowDealModal(true);
   };
 
   return (
     <>
       <div className="flex flex-col gap-3">
-        <button
-          type="button"
-          onClick={handleDealRequest}
-          disabled={dealRequested}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-terracotta py-3.5 text-sm font-semibold text-white transition-colors hover:bg-terracotta-dark disabled:cursor-default disabled:bg-sage"
-        >
-          <Handshake className="h-4 w-4" />
-          {dealRequested ? "Deal request coming soon" : "Send Deal Request"}
-        </button>
+        {!isSignedUp || isBrand ? (
+          <button
+            type="button"
+            onClick={handleDealRequest}
+            disabled={authLoading}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-terracotta py-3.5 text-sm font-semibold text-white transition-colors hover:bg-terracotta-dark disabled:opacity-50"
+          >
+            <Handshake className="h-4 w-4" />
+            Send Deal Request
+          </button>
+        ) : (
+          <p className="rounded-xl border border-cream-dark bg-cream/50 px-4 py-3 text-center text-sm text-warm-gray">
+            Deal requests are sent by brand accounts.{" "}
+            <Link href="/dashboard/creator/inquiries" className="text-terracotta hover:underline">
+              View your incoming deals
+            </Link>
+          </p>
+        )}
 
         {authLoading ? (
           <div className="flex w-full items-center justify-center rounded-xl border border-cream-dark py-3 text-sm text-warm-gray">
@@ -94,6 +108,13 @@ export function CreatorProfileActions({ creator }: CreatorProfileActionsProps) {
       </div>
 
       <SignupModal open={showSignup} onClose={() => setShowSignup(false)} />
+      {isBrand && (
+        <DealRequestModal
+          open={showDealModal}
+          onClose={() => setShowDealModal(false)}
+          creator={creator}
+        />
+      )}
     </>
   );
 }

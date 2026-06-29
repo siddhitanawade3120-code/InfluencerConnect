@@ -94,12 +94,19 @@ export default async function CreatorDashboardPage() {
         </div>
       )}
 
-      <div className="mt-6 rounded-2xl border border-dashed border-cream-dark bg-cream/50 p-6 text-sm text-warm-gray">
-        <p className="font-medium text-warm-brown">Coming soon</p>
-        <p className="mt-1">Collab requests, rate cards, and brand messages will appear here.</p>
-        <Link href="/" className="mt-4 inline-block font-medium text-terracotta hover:underline">
-          Back to home →
-        </Link>
+      <div className="mt-6 rounded-2xl border border-cream-dark bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold text-warm-brown">Deal requests</h2>
+          <Link
+            href="/dashboard/creator/inquiries"
+            className="text-sm font-medium text-terracotta hover:underline"
+          >
+            View all →
+          </Link>
+        </div>
+        <p className="mt-2 text-sm text-warm-gray">
+          Brands can send you collab offers. Accept, counter, or decline — then chat in the thread.
+        </p>
       </div>
     </div>
   );

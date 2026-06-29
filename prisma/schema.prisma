@@ -77,3 +77,26 @@ model Creator {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 }
+
+model Inquiry {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  brandId       String    @db.ObjectId
+  creatorId     String    @db.ObjectId
+  status        String    @default("PENDING")
+  offeredBudget Int
+  deliverables  String
+  deadline      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  messages      Message[]
+}
+
+model Message {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  inquiryId  String   @db.ObjectId
+  inquiry    Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  senderRole String
+  senderId   String   @db.ObjectId
+  body       String
+  createdAt  DateTime @default(now())
+}

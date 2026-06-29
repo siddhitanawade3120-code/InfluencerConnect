@@ -25,6 +25,10 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  if (pathname.startsWith("/dashboard/inquiries")) {
+    return NextResponse.next();
+  }
+
   if (pathname.startsWith("/dashboard/brand") && session.role !== "BRAND") {
     return NextResponse.redirect(new URL("/dashboard/creator", request.url));
   }
