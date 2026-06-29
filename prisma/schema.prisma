@@ -7,6 +7,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  BRAND
+  CREATOR
+}
+
+model User {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  name         String
+  phone        String?
+  isVerified   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  brandProfile   BrandProfile?
+  creatorProfile CreatorProfile?
+}
+
+model BrandProfile {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String  @unique @db.ObjectId
+  user         User    @relation(fields: [userId], references: [id])
+  businessName String
+  category     String
+  budgetMin    Int
+  budgetMax    Int
+  area         String
+  city         String  @default("Vasai-Virar")
+  logoUrl      String?
+  website      String?
+}
+
+model CreatorProfile {
+  id              String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String  @unique @db.ObjectId
+  user            User    @relation(fields: [userId], references: [id])
+  instagramHandle String
+  bio             String?
+  /// Optional link to admin-added Creator record (claimed profile)
+  creatorId       String? @db.ObjectId
+}
+
 model Creator {
   id                     String   @id @default(auto()) @map("_id") @db.ObjectId
   instagramHandle        String   @unique
