@@ -14,6 +14,7 @@ import {
   redactCreatorContact,
   shouldShowCreatorContact,
 } from "@/lib/marketplace-access";
+import { isRegisteredCreator } from "@/lib/creator-registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,6 +35,11 @@ export async function GET(_request: Request, { params }: Params) {
     );
 
     if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const registered = await isRegisteredCreator(id);
+    if (!registered) {
+      return NextResponse.json({ error: "Creator not found" }, { status: 404 });
+    }
 
     const user = await getCurrentUser();
     if (!canViewCreatorProfile(user, id)) {

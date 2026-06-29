@@ -18,6 +18,10 @@ import {
   redactCreatorContact,
   shouldShowCreatorContact,
 } from "@/lib/marketplace-access";
+import {
+  getRegisteredCreatorIds,
+  toObjectIds,
+} from "@/lib/creator-registry";
 import type { Creator } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -51,7 +55,18 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const listQuery = parseCreatorListQuery(searchParams);
-    const filter = buildMongoCreatorFilter(listQuery);
+    const baseFilter = buildMongoCreatorFilter(listQuery);
+
+    // Only creators who signed up and linked their account — not admin-only listings
+    const registeredIds = await getRegisteredCreatorIds();
+    if (registeredIds.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    const filter =
+      Object.keys(baseFilter).length === 0
+        ? { _id: { $in: toObjectIds(registeredIds) } }
+        : { $and: [baseFilter, { _id: { $in: toObjectIds(registeredIds) } }] };
 
     const rows = await withMongo((db) =>
       db.collection<CreatorDocument>(COLLECTION).find(filter).toArray()

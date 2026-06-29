@@ -10,9 +10,9 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "InfluConnect — Find Instagram Creators Who Fit Your Budget",
+  title: "InfluConnect — Small businesses find registered local creators",
   description:
-    "Connect your cloud kitchen or small restaurant with hyperlocal micro-influencers in Vasai-Virar and Mumbai.",
+    "Creators register on InfluConnect. Small businesses in Vasai-Virar sign up, filter registered creators, and send deal requests.",
 };
 
 export default function RootLayout({

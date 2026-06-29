@@ -86,7 +86,7 @@ export async function POST(request: Request) {
           name: user.name,
           brandProfile: user.brandProfile,
         },
-        redirect: "/dashboard/brand",
+        redirect: "/results",
       },
       { status: 201 }
     );

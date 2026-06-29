@@ -18,6 +18,7 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { computeMatchScore } from "@/lib/match-score";
 import { canViewCreatorProfile } from "@/lib/marketplace-access";
+import { isRegisteredCreator } from "@/lib/creator-registry";
 import {
   formatFollowers,
   formatRate,
@@ -44,6 +45,9 @@ export default async function CreatorProfilePage({ params }: PageProps) {
   );
 
   if (!doc) notFound();
+
+  const registered = await isRegisteredCreator(id);
+  if (!registered) notFound();
 
   const user = await getCurrentUser();
   if (!canViewCreatorProfile(user, id)) {

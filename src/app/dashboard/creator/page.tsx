@@ -101,9 +101,9 @@ export default async function CreatorDashboardPage() {
         <div className="mt-6 rounded-2xl border border-dashed border-cream-dark bg-cream/50 p-6 text-sm text-warm-gray">
             <p className="font-medium text-warm-brown">No linked profile yet</p>
           <p className="mt-1">
-            Your handle is <strong>@{profile?.instagramHandle}</strong>. An admin must add this
-            handle to the directory first — then your account links automatically and brands can
-            send you deals. Contact support if your handle is already listed but not linked.
+            Your handle is <strong>@{profile?.instagramHandle}</strong>. Sign out and use
+            &quot;Verify&quot; on the creator signup page to re-import your Instagram profile,
+            or contact support for help.
           </p>
         </div>
       )}

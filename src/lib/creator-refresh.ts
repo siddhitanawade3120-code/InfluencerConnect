@@ -50,7 +50,7 @@ export async function refreshCreatorFromInstagram(
         estimatedRateMin: preserve?.estimatedRateMin,
         estimatedRateMax: preserve?.estimatedRateMax,
         notes: preserve?.notes ?? undefined,
-        sourceFound: "auto-refresh",
+        sourceFound: preserve?.sourceFound ?? "auto-refresh",
       })
     );
 

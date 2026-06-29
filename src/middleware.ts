@@ -3,12 +3,30 @@ import type { NextRequest } from "next/server";
 import { verifySessionToken, USER_COOKIE } from "@/lib/auth-session";
 
 const BRAND_ONLY_PATHS = ["/results", "/shortlist"];
+const AUTH_PAGES = ["/login", "/signup"];
+
+function dashboardForRole(role: "BRAND" | "CREATOR") {
+  return role === "BRAND" ? "/dashboard/brand" : "/dashboard/creator";
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const token = request.cookies.get(USER_COOKIE)?.value;
   const session = token ? await verifySessionToken(token) : null;
+
+  // Logged-in users should not see login/signup pages
+  if (
+    session &&
+    (AUTH_PAGES.includes(pathname) || pathname.startsWith("/signup/"))
+  ) {
+    const redirectParam = request.nextUrl.searchParams.get("redirect");
+    const safeRedirect =
+      redirectParam?.startsWith("/dashboard") ? redirectParam : null;
+    return NextResponse.redirect(
+      new URL(safeRedirect ?? dashboardForRole(session.role), request.url)
+    );
+  }
 
   // Logged-in creators should not browse the brand discovery flow
   if (session?.role === "CREATOR") {
@@ -50,5 +68,14 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/results", "/shortlist", "/creators/:path*", "/dashboard/:path*"],
+  matcher: [
+    "/",
+    "/login",
+    "/signup",
+    "/signup/:path*",
+    "/results",
+    "/shortlist",
+    "/creators/:path*",
+    "/dashboard/:path*",
+  ],
 };

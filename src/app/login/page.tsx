@@ -1,20 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
-import { LogIn, Building2, Camera } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { useState, Suspense, useEffect } from "react";
+import { LogIn, Building2, Camera, Loader2 } from "lucide-react";
 import { useApp } from "@/lib/context";
 
+function dashboardForRole(role: "BRAND" | "CREATOR") {
+  return role === "BRAND" ? "/dashboard/brand" : "/dashboard/creator";
+}
+
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const { refreshAuth } = useApp();
+  const { user, authLoading } = useApp();
   const redirect = searchParams.get("redirect");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Already signed in — leave login page (full navigation for reliable cookie/middleware)
+  useEffect(() => {
+    if (authLoading || !user) return;
+    const dest =
+      redirect?.startsWith("/dashboard") ? redirect : dashboardForRole(user.role);
+    window.location.replace(dest);
+  }, [authLoading, user, redirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,15 +39,27 @@ function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Login failed");
-      await refreshAuth();
-      router.push(redirect ?? data.redirect ?? "/");
-      router.refresh();
+
+      const dest =
+        redirect?.startsWith("/dashboard")
+          ? redirect
+          : (data.redirect as string) ?? dashboardForRole(data.user?.role ?? "CREATOR");
+
+      // Full navigation so middleware picks up the new session cookie
+      window.location.assign(dest);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
       setLoading(false);
     }
   };
+
+  if (authLoading || user) {
+    return (
+      <div className="page-gradient flex min-h-[calc(100vh-57px)] items-center justify-center text-warm-gray">
+        <Loader2 className="h-8 w-8 animate-spin text-terracotta" />
+      </div>
+    );
+  }
 
   return (
     <div className="page-gradient flex min-h-[calc(100vh-57px)] items-center justify-center px-4 py-12">

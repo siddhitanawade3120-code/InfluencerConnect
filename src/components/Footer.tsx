@@ -14,8 +14,8 @@ export function Footer() {
               <span className="text-lg font-bold text-warm-brown">InfluConnect</span>
             </div>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-warm-gray">
-              The simplest way for small businesses in Vasai-Virar to find and collaborate
-              with local Instagram creators — no agency, no middleman.
+              Creators register with Instagram. Small businesses sign up, filter the directory,
+              and send deal requests — a local marketplace for Vasai-Virar.
             </p>
           </div>
 

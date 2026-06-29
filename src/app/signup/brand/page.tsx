@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useApp } from "@/lib/context";
 import { AREAS, CITIES } from "@/lib/types";
 
 const CATEGORIES = [
@@ -18,8 +16,6 @@ const CATEGORIES = [
 const inputClass = "input-field !py-2.5";
 
 export default function BrandSignupPage() {
-  const router = useRouter();
-  const { refreshAuth } = useApp();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
@@ -48,9 +44,7 @@ export default function BrandSignupPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Signup failed");
-      await refreshAuth();
-      router.push(data.redirect ?? "/dashboard/brand");
-      router.refresh();
+      window.location.assign(data.redirect ?? "/results");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
@@ -63,9 +57,10 @@ export default function BrandSignupPage() {
       <Link href="/signup" className="text-sm font-medium text-warm-gray hover:text-terracotta">
         ← Back to account type
       </Link>
-      <h1 className="mt-6 text-2xl font-bold text-warm-brown">Create your brand account</h1>
+      <h1 className="mt-6 text-2xl font-bold text-warm-brown">Sign up your business</h1>
       <p className="mt-2 text-sm leading-relaxed text-warm-gray">
-        Tell us about your business so we can match you with the right creators in your area.
+        Tell us your budget and location — then filter creators who registered on
+        InfluConnect and send them deal requests.
       </p>
 
       <form onSubmit={handleSubmit} className="card mt-8 space-y-4 !p-6 sm:!p-8">

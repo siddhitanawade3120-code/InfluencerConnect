@@ -2,15 +2,15 @@ import Link from "next/link";
 import { Building2, Camera, ArrowRight, Check } from "lucide-react";
 
 const BRAND_BENEFITS = [
-  "Search verified local creators",
-  "Send structured deal requests",
-  "Track negotiations in one place",
+  "Filter creators registered on InfluConnect",
+  "Match by budget, niche, area & followers",
+  "Send deal requests and track collabs",
 ];
 
 const CREATOR_BENEFITS = [
-  "Receive offers from local brands",
-  "Private deal dashboard",
-  "Accept, counter, or decline easily",
+  "Instagram stats imported automatically",
+  "Visible to brands in local search",
+  "Private deal dashboard for collabs",
 ];
 
 export default function SignupPage() {
@@ -20,7 +20,7 @@ export default function SignupPage() {
         <div className="text-center">
           <h1 className="text-3xl font-bold text-warm-brown">Get started free</h1>
           <p className="mt-3 text-warm-gray">
-            Choose how you want to use InfluConnect
+            Creators join the directory · Businesses filter and hire
           </p>
         </div>
 
@@ -34,7 +34,8 @@ export default function SignupPage() {
             </div>
             <h2 className="mt-5 text-xl font-bold text-warm-brown">I&apos;m a Business</h2>
             <p className="mt-2 text-sm leading-relaxed text-warm-gray">
-              Cloud kitchen, restaurant, cafe, or bakery looking for local creators.
+              Cloud kitchen, restaurant, cafe, or bakery — sign up, filter our registered
+              creators, and send deal requests.
             </p>
             <ul className="mt-4 flex-1 space-y-2">
               {BRAND_BENEFITS.map((b) => (
@@ -60,6 +61,7 @@ export default function SignupPage() {
             <h2 className="mt-5 text-xl font-bold text-warm-brown">I&apos;m a Creator</h2>
             <p className="mt-2 text-sm leading-relaxed text-warm-gray">
               Food or lifestyle influencer ready for brand collabs in Vasai-Virar.
+              Your Instagram profile is imported automatically on signup.
             </p>
             <ul className="mt-4 flex-1 space-y-2">
               {CREATOR_BENEFITS.map((b) => (

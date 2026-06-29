@@ -7,6 +7,7 @@ import {
   normalizeInstagramHandle,
   sessionCookieOptions,
 } from "@/lib/auth";
+import { ensureCreatorFromInstagram } from "@/lib/creator-import";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,8 @@ export async function POST(request: Request) {
     const phone = (body.phone ?? "").toString().trim() || null;
     const instagramHandle = normalizeInstagramHandle(body.instagramHandle ?? "");
     const bio = (body.bio ?? "").toString().trim() || null;
+    const city = (body.city ?? "Mumbai").toString().trim();
+    const area = (body.area ?? "Vasai-Virar").toString().trim();
 
     if (!email || !password || password.length < 8) {
       return NextResponse.json(
@@ -48,23 +51,30 @@ export async function POST(request: Request) {
       );
     }
 
-    const matchedCreator = await prisma.creator.findUnique({
-      where: { instagramHandle },
+    // Scrape Instagram and add/update public directory profile for brands
+    const imported = await ensureCreatorFromInstagram(instagramHandle, {
+      city,
+      area,
+      sourceFound: "creator-signup",
     });
 
-    if (matchedCreator) {
-      const alreadyClaimed = await prisma.creatorProfile.findFirst({
-        where: { creatorId: matchedCreator.id },
-      });
-      if (alreadyClaimed) {
-        return NextResponse.json(
-          {
-            error:
-              "This creator profile has already been claimed. Contact support if this is your account.",
-          },
-          { status: 409 }
-        );
-      }
+    if (!imported.ok) {
+      return NextResponse.json({ error: imported.error }, { status: 400 });
+    }
+
+    const directoryCreator = imported.creator;
+
+    const alreadyClaimed = await prisma.creatorProfile.findFirst({
+      where: { creatorId: directoryCreator.id },
+    });
+    if (alreadyClaimed) {
+      return NextResponse.json(
+        {
+          error:
+            "This Instagram profile has already been claimed. Contact support if this is your account.",
+        },
+        { status: 409 }
+      );
     }
 
     const passwordHash = await hashPassword(password);
@@ -79,8 +89,8 @@ export async function POST(request: Request) {
         creatorProfile: {
           create: {
             instagramHandle,
-            bio,
-            creatorId: matchedCreator?.id ?? null,
+            bio: bio ?? directoryCreator.notes ?? null,
+            creatorId: directoryCreator.id,
           },
         },
       },
@@ -101,7 +111,12 @@ export async function POST(request: Request) {
           role: user.role,
           name: user.name,
           creatorProfile: user.creatorProfile,
-          claimedCreator: Boolean(matchedCreator),
+          claimedCreator: true,
+          directoryProfile: {
+            followerCount: directoryCreator.followerCount,
+            avgEngagementRate: directoryCreator.avgEngagementRate,
+            profilePicUrl: directoryCreator.profilePicUrl,
+          },
         },
         redirect: "/dashboard/creator",
       },

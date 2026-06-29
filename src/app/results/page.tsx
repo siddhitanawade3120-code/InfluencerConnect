@@ -56,7 +56,7 @@ export default function ResultsPage() {
                   Sign up free to send deal requests
                 </p>
                 <p className="text-sm text-warm-gray">
-                  Browse now — create a brand account to contact creators and negotiate deals.
+                  Only creators who registered on InfluConnect — sign up to send deals.
                 </p>
               </div>
             </div>
@@ -76,13 +76,13 @@ export default function ResultsPage() {
             </Link>
             <h1 className="text-2xl font-bold text-warm-brown">
               {loading
-                ? "Searching…"
+                ? "Loading creators…"
                 : fetchError
                   ? "Could not load creators"
-                  : `${results.length} creator${results.length !== 1 ? "s" : ""} found`}
+                  : `${results.length} registered creator${results.length !== 1 ? "s" : ""}`}
             </h1>
             <p className="text-sm text-warm-gray">
-              {filters.area}, {filters.city}
+              On InfluConnect · {filters.area}, {filters.city}
               {filters.niches.length > 0 && ` · ${filters.niches.join(", ")}`}
               {filters.budgetMin > 500 || filters.budgetMax < 10000
                 ? ` · ₹${filters.budgetMin.toLocaleString("en-IN")}–₹${filters.budgetMax.toLocaleString("en-IN")}`
@@ -161,11 +161,11 @@ export default function ResultsPage() {
             ) : fetchError ? null : results.length === 0 ? (
               <div className="card p-12 text-center">
                 <p className="text-lg font-medium text-warm-brown">
-                  No creators match your filters
+                  No registered creators match your filters yet
                 </p>
                 <p className="mt-2 text-sm text-warm-gray">
-                  Try widening your budget range, selecting more follower tiers, or choosing
-                  &quot;All Mumbai&quot; for area.
+                  Try widening your budget or area — or ask creators in your network to join
+                  InfluConnect.
                 </p>
                 <button type="button" onClick={resetFilters} className="btn-primary mt-4 !text-sm">
                   Reset filters

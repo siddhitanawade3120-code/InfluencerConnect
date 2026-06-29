@@ -59,6 +59,9 @@ export function CreatorCard({ creator, showMatchScore = false }: CreatorCardProp
                 <h3 className="truncate font-semibold text-warm-brown">
                   @{creator.instagramHandle}
                 </h3>
+                <span className="shrink-0 rounded-full bg-sage-light/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sage-dark">
+                  Registered
+                </span>
                 {fresh && (
                   <BadgeCheck className="h-4 w-4 shrink-0 text-sage" aria-label="Recently verified" />
                 )}

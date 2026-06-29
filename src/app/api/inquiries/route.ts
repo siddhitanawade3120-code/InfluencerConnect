@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { enrichInquiry } from "@/lib/inquiry-serializer";
 import { notifyNewInquiry } from "@/lib/inquiry-notifications";
 import { isValidObjectId } from "@/lib/mongodb";
+import { isRegisteredCreator } from "@/lib/creator-registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -135,6 +136,13 @@ export async function POST(request: Request) {
     const creator = await prisma.creator.findUnique({ where: { id: creatorId } });
     if (!creator || !creator.isVerifiedActive) {
       return NextResponse.json({ error: "Creator not found" }, { status: 404 });
+    }
+
+    if (!(await isRegisteredCreator(creatorId))) {
+      return NextResponse.json(
+        { error: "You can only send deals to creators registered on InfluConnect" },
+        { status: 400 }
+      );
     }
 
     let deadline: Date | null = null;

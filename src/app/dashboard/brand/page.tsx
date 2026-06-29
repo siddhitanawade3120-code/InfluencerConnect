@@ -48,8 +48,8 @@ export default async function BrandDashboardPage() {
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-terracotta/10">
             <Search className="h-5 w-5 text-terracotta" />
           </div>
-          <p className="mt-4 font-semibold text-warm-brown">Find creators</p>
-          <p className="mt-1 text-sm text-warm-gray">Browse and shortlist</p>
+          <p className="mt-4 font-semibold text-warm-brown">Find registered creators</p>
+          <p className="mt-1 text-sm text-warm-gray">Browse &amp; shortlist</p>
           <ArrowRight className="mt-3 h-4 w-4 text-terracotta opacity-0 transition-opacity group-hover:opacity-100" />
         </Link>
 
