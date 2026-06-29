@@ -35,6 +35,8 @@ export interface Creator {
   language?: string[];
   sourceFound?: string;
   notes?: string;
+  /** Present when a logged-in brand session requests the list */
+  matchScore?: number;
 }
 
 export interface SearchFilters {
@@ -52,21 +54,22 @@ export interface ShortlistItem {
   addedAt: number;
 }
 
-export type SortOption = "engagement" | "followers" | "price_low";
+export type SortOption = "match" | "engagement" | "followers" | "price_low";
 
 export const CITIES = ["Mumbai"] as const;
 
+/** Vasai-Virar hyperlocal localities for discovery filters */
+export const VV_AREAS = [
+  "Vasai-Virar",
+  "Vasai",
+  "Nalasopara",
+  "Virar",
+  "Naigaon",
+  "Bhayandar",
+] as const;
+
 export const AREAS: Record<string, string[]> = {
-  Mumbai: [
-    "Vasai-Virar",
-    "Vasai",
-    "Virar",
-    "Nalasopara",
-    "Borivali",
-    "Andheri",
-    "Bandra",
-    "All Mumbai",
-  ],
+  Mumbai: [...VV_AREAS, "All Mumbai"],
 };
 
 export const NICHES: Niche[] = ["Food", "Desserts", "Cafe", "Lifestyle"];
@@ -138,7 +141,14 @@ export function filterCreators(
     if (!c.isVerifiedActive) return false;
     if (filters.city && c.city !== filters.city) return false;
     if (filters.area && filters.area !== "All Mumbai") {
-      const vvAreas = ["Vasai", "Virar", "Vasai-Virar", "Nalasopara"];
+      const vvAreas = [
+        "Vasai",
+        "Virar",
+        "Vasai-Virar",
+        "Nalasopara",
+        "Naigaon",
+        "Bhayandar",
+      ];
       const areaMatch =
         c.area === filters.area ||
         (filters.area === "Vasai-Virar" && vvAreas.includes(c.area)) ||
@@ -171,6 +181,10 @@ export function sortCreators(
 ): Creator[] {
   const sorted = [...creators];
   switch (sort) {
+    case "match":
+      return sorted.sort(
+        (a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0)
+      );
     case "engagement":
       return sorted.sort((a, b) => b.avgEngagementRate - a.avgEngagementRate);
     case "followers":

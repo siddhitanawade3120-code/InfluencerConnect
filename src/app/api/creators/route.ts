@@ -7,6 +7,13 @@ import {
 } from "@/lib/mongodb";
 import { inputToDbData, type CreatorInput } from "@/lib/creator-mapper";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { getCurrentUser } from "@/lib/auth";
+import {
+  buildMongoCreatorFilter,
+  parseCreatorListQuery,
+} from "@/lib/creator-query";
+import { sortCreatorsByMatchScore } from "@/lib/match-score";
+import type { Creator } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,18 +37,29 @@ function dbErrorResponse(err: unknown) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const activeOnly = searchParams.get("activeOnly") !== "false";
-    const filter = activeOnly ? { isVerifiedActive: true } : {};
+    const listQuery = parseCreatorListQuery(searchParams);
+    const filter = buildMongoCreatorFilter(listQuery);
 
     const rows = await withMongo((db) =>
-      db
-        .collection<CreatorDocument>(COLLECTION)
-        .find(filter)
-        .sort({ updatedAt: -1 })
-        .toArray()
+      db.collection<CreatorDocument>(COLLECTION).find(filter).toArray()
     );
 
-    return NextResponse.json(rows.map(docToCreator));
+    let creators: Creator[] = rows.map(docToCreator);
+
+    const user = await getCurrentUser();
+    const brandProfile =
+      user?.role === "BRAND" ? user.brandProfile : null;
+
+    if (brandProfile) {
+      creators = sortCreatorsByMatchScore(creators, {
+        brandBudgetMin: brandProfile.budgetMin,
+        brandBudgetMax: brandProfile.budgetMax,
+      });
+    } else {
+      creators.sort((a, b) => b.followerCount - a.followerCount);
+    }
+
+    return NextResponse.json(creators);
   } catch (err) {
     console.error("GET /api/creators:", err);
     return dbErrorResponse(err);

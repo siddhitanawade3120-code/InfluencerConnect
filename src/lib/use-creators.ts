@@ -1,17 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Creator } from "@/lib/types";
+import type { Creator, SearchFilters } from "@/lib/types";
+import { filtersToSearchParams } from "@/lib/creator-query";
 
 interface UseCreatorsOptions {
+  filters?: SearchFilters;
   activeOnly?: boolean;
   /** Background Instagram refresh for stale profiles (default true) */
   autoRefresh?: boolean;
 }
 
-async function fetchCreators(activeOnly: boolean): Promise<Creator[]> {
-  const qs = activeOnly ? "" : "?activeOnly=false";
-  const r = await fetch(`/api/creators${qs}`);
+function buildCreatorsUrl(filters: SearchFilters | undefined, activeOnly: boolean): string {
+  if (filters) {
+    const params = filtersToSearchParams(filters, activeOnly);
+    return `/api/creators?${params.toString()}`;
+  }
+  return activeOnly ? "/api/creators" : "/api/creators?activeOnly=false";
+}
+
+async function fetchCreators(
+  filters: SearchFilters | undefined,
+  activeOnly: boolean
+): Promise<Creator[]> {
+  const r = await fetch(buildCreatorsUrl(filters, activeOnly));
   const data = await r.json();
   if (!r.ok) throw new Error(data.error ?? "Failed to load creators");
   if (!Array.isArray(data)) throw new Error("Invalid response from server");
@@ -19,7 +31,8 @@ async function fetchCreators(activeOnly: boolean): Promise<Creator[]> {
 }
 
 export function useCreators(options: UseCreatorsOptions = {}) {
-  const { activeOnly = true, autoRefresh = true } = options;
+  const { filters, activeOnly = true, autoRefresh = true } = options;
+  const filterKey = filters ? filtersToSearchParams(filters, activeOnly).toString() : "";
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -27,16 +40,17 @@ export function useCreators(options: UseCreatorsOptions = {}) {
   const refreshStarted = useRef(false);
 
   const load = useCallback(async () => {
-    const data = await fetchCreators(activeOnly);
+    const data = await fetchCreators(filters, activeOnly);
     setCreators(data);
     setError(null);
     return data;
-  }, [activeOnly]);
+  }, [filters, activeOnly]);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
 
-    fetchCreators(activeOnly)
+    fetchCreators(filters, activeOnly)
       .then((data) => {
         if (!cancelled) {
           setCreators(data);
@@ -56,7 +70,7 @@ export function useCreators(options: UseCreatorsOptions = {}) {
     return () => {
       cancelled = true;
     };
-  }, [activeOnly]);
+  }, [filters, activeOnly, filterKey]);
 
   useEffect(() => {
     if (!autoRefresh || loading || refreshStarted.current) return;
@@ -76,7 +90,7 @@ export function useCreators(options: UseCreatorsOptions = {}) {
         if (cancelled) return;
 
         if (data.refreshed > 0) {
-          const updated = await fetchCreators(activeOnly);
+          const updated = await fetchCreators(filters, activeOnly);
           if (!cancelled) setCreators(updated);
         }
       } catch {
@@ -89,7 +103,7 @@ export function useCreators(options: UseCreatorsOptions = {}) {
     return () => {
       cancelled = true;
     };
-  }, [activeOnly, autoRefresh, loading]);
+  }, [activeOnly, autoRefresh, loading, filters, filterKey]);
 
   return { creators, loading, refreshing, error, reload: load };
 }

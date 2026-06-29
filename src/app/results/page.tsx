@@ -1,15 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { SlidersHorizontal, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { SearchFilters } from "@/components/SearchFilters";
 import { CreatorCard } from "@/components/CreatorCard";
 import { useApp } from "@/lib/context";
 import { useCreators } from "@/lib/use-creators";
-import { filterCreators, sortCreators, type SortOption } from "@/lib/types";
+import { sortCreators, type SortOption } from "@/lib/types";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: "match", label: "Best match" },
   { value: "engagement", label: "Engagement rate" },
   { value: "followers", label: "Followers" },
   { value: "price_low", label: "Price: low to high" },
@@ -17,14 +18,35 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 
 export default function ResultsPage() {
   const { filters, updateFilters, resetFilters, shortlist } = useApp();
-  const [sort, setSort] = useState<SortOption>("engagement");
+  const [sort, setSort] = useState<SortOption>("followers");
+  const [hasBrandBudget, setHasBrandBudget] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const { creators, loading, refreshing, error: fetchError } = useCreators();
+  const { creators, loading, refreshing, error: fetchError } = useCreators({ filters });
 
-  const results = useMemo(() => {
-    const filtered = filterCreators(creators, filters);
-    return sortCreators(filtered, sort);
-  }, [creators, filters, sort]);
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.user?.role === "BRAND" && data.user.brandProfile) {
+          setHasBrandBudget(true);
+          setSort("match");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const sortOptions = useMemo(
+    () =>
+      hasBrandBudget
+        ? SORT_OPTIONS
+        : SORT_OPTIONS.filter((o) => o.value !== "match"),
+    [hasBrandBudget]
+  );
+
+  const results = useMemo(
+    () => sortCreators(creators, sort),
+    [creators, sort]
+  );
 
   return (
     <div className="min-h-[calc(100vh-57px)]">
@@ -47,6 +69,9 @@ export default function ResultsPage() {
             <p className="text-sm text-warm-gray">
               {filters.area}, {filters.city}
               {filters.niches.length > 0 && ` · ${filters.niches.join(", ")}`}
+              {filters.budgetMin > 500 || filters.budgetMax < 10000
+                ? ` · ₹${filters.budgetMin.toLocaleString("en-IN")}–₹${filters.budgetMax.toLocaleString("en-IN")}`
+                : ""}
               {refreshing && (
                 <span className="ml-2 text-sage-dark"> · Updating stats from Instagram…</span>
               )}
@@ -59,7 +84,7 @@ export default function ResultsPage() {
               onChange={(e) => setSort(e.target.value as SortOption)}
               className="rounded-xl border border-cream-dark bg-white px-4 py-2 text-sm font-medium focus:border-terracotta focus:outline-none"
             >
-              {SORT_OPTIONS.map((opt) => (
+              {sortOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   Sort: {opt.label}
                 </option>
@@ -94,7 +119,8 @@ export default function ResultsPage() {
               <p className="mt-1">{fetchError}</p>
               <p className="mt-2 text-red-700">
                 Fix in MongoDB Atlas: (1) Resume cluster if paused, (2) Network Access →
-                Add IP → Allow from anywhere for dev, (3) restart <code className="rounded bg-red-100 px-1">npm run dev</code>
+                Add IP → Allow from anywhere for dev, (3) restart{" "}
+                <code className="rounded bg-red-100 px-1">npm run dev</code>
               </p>
             </div>
           </div>
@@ -122,25 +148,17 @@ export default function ResultsPage() {
                 <p className="text-lg font-medium text-warm-brown">
                   No creators match your filters
                 </p>
-                {creators.length > 0 ? (
-                  <>
-                    <p className="mt-2 text-sm text-warm-gray">
-                      {creators.length} creator{creators.length !== 1 ? "s are" : " is"} in the
-                      database but hidden by your current filters.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={resetFilters}
-                      className="mt-4 inline-block rounded-xl bg-terracotta px-6 py-2.5 text-sm font-semibold text-white hover:bg-terracotta-dark"
-                    >
-                      Reset filters & show all
-                    </button>
-                  </>
-                ) : (
-                  <p className="mt-2 text-sm text-warm-gray">
-                    No active creators yet. Add them via the admin panel.
-                  </p>
-                )}
+                <p className="mt-2 text-sm text-warm-gray">
+                  Try widening your budget range, selecting more follower tiers, or choosing
+                  &quot;All Mumbai&quot; for area.
+                </p>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="mt-4 inline-block rounded-xl bg-terracotta px-6 py-2.5 text-sm font-semibold text-white hover:bg-terracotta-dark"
+                >
+                  Reset filters
+                </button>
                 <Link href="/" className="mt-4 block text-terracotta hover:underline">
                   Adjust search on home page
                 </Link>
@@ -148,7 +166,7 @@ export default function ResultsPage() {
             ) : (
               <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 {results.map((creator) => (
-                  <CreatorCard key={creator.id} creator={creator} />
+                  <CreatorCard key={creator.id} creator={creator} showMatchScore={hasBrandBudget} />
                 ))}
               </div>
             )}
