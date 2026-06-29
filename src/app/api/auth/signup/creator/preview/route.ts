@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { normalizeInstagramHandle } from "@/lib/auth";
-import { ensureCreatorFromInstagram } from "@/lib/creator-import";
+import { previewInstagramProfile } from "@/lib/creator-import";
 
 export const runtime = "nodejs";
 
-/** Public preview for creator signup — scrapes Instagram without saving an account */
+/** Public preview for creator signup — scrapes Instagram without saving */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -16,29 +16,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Instagram handle is required" }, { status: 400 });
     }
 
-    const result = await ensureCreatorFromInstagram(instagramHandle, { city, area });
+    const result = await previewInstagramProfile(instagramHandle, { city, area });
 
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    const c = result.creator;
-    return NextResponse.json({
-      preview: {
-        instagramHandle: c.instagramHandle,
-        fullName: c.fullName,
-        profilePicUrl: c.profilePicUrl,
-        followerCount: c.followerCount,
-        avgEngagementRate: c.avgEngagementRate,
-        avgLikes: c.avgLikes,
-        avgComments: c.avgComments,
-        nicheTags: c.nicheTags,
-        estimatedRateMin: c.estimatedRateMin,
-        estimatedRateMax: c.estimatedRateMax,
-        contentStyle: c.contentStyle,
-        bio: c.notes,
-      },
-    });
+    return NextResponse.json({ preview: result.preview });
   } catch (err) {
     console.error("POST /api/auth/signup/creator/preview:", err);
     return NextResponse.json({ error: "Instagram preview failed" }, { status: 500 });

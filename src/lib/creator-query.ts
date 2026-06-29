@@ -1,4 +1,5 @@
 import type { Filter, Document } from "mongodb";
+import type { Prisma } from "@prisma/client";
 import {
   FOLLOWER_TIERS,
   type FollowerTier,
@@ -91,6 +92,68 @@ export function buildMongoCreatorFilter(query: CreatorListQuery): Filter<Documen
   if (parts.length === 0) return {};
   if (parts.length === 1) return parts[0];
   return { $and: parts };
+}
+
+function followerTierPrismaConditions(tiers: FollowerTier[]): Prisma.CreatorWhereInput[] {
+  const conditions: Prisma.CreatorWhereInput[] = [];
+  for (const tier of tiers) {
+    const def = FOLLOWER_TIERS.find((t) => t.id === tier);
+    if (!def) continue;
+    if (tier === "mid") {
+      conditions.push({ followerCount: { gte: def.min } });
+    } else {
+      conditions.push({ followerCount: { gte: def.min, lt: def.max } });
+    }
+  }
+  return conditions;
+}
+
+/** Prisma filter — faster than raw Mongo + separate registry query per field */
+export function buildPrismaCreatorWhere(
+  query: CreatorListQuery,
+  registeredIds: string[]
+): Prisma.CreatorWhereInput {
+  const and: Prisma.CreatorWhereInput[] = [{ id: { in: registeredIds } }];
+
+  if (query.activeOnly !== false) {
+    and.push({ isVerifiedActive: true });
+  }
+
+  if (query.city) {
+    and.push({ city: query.city });
+  }
+
+  if (query.area && query.area !== "All Mumbai") {
+    const areas = areasForFilter(query.area);
+    if (areas.length) and.push({ area: { in: areas } });
+  }
+
+  if (
+    query.budgetMin != null &&
+    query.budgetMax != null &&
+    Number.isFinite(query.budgetMin) &&
+    Number.isFinite(query.budgetMax)
+  ) {
+    and.push({ estimatedRateMax: { gte: query.budgetMin } });
+    and.push({ estimatedRateMin: { lte: query.budgetMax } });
+  }
+
+  if (query.niches?.length) {
+    and.push({
+      OR: query.niches.map((n) => ({
+        nicheTags: { contains: n },
+      })),
+    });
+  }
+
+  if (query.followerTiers?.length) {
+    const tierConditions = followerTierPrismaConditions(query.followerTiers);
+    if (tierConditions.length) {
+      and.push({ OR: tierConditions });
+    }
+  }
+
+  return { AND: and };
 }
 
 export function parseCreatorListQuery(searchParams: URLSearchParams): CreatorListQuery {

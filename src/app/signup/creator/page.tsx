@@ -53,6 +53,9 @@ export default function CreatorSignupPage() {
     setPreview(null);
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000);
+
       const res = await fetch("/api/auth/signup/creator/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -61,7 +64,9 @@ export default function CreatorSignupPage() {
           city: form.city,
           area: form.area,
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not load Instagram profile");
 
@@ -73,7 +78,11 @@ export default function CreatorSignupPage() {
         setForm((f) => ({ ...f, bio: data.preview.bio }));
       }
     } catch (err) {
-      setPreviewError(err instanceof Error ? err.message : "Preview failed");
+      if (err instanceof Error && err.name === "AbortError") {
+        setPreviewError("Instagram took too long. Try again in a moment.");
+      } else {
+        setPreviewError(err instanceof Error ? err.message : "Preview failed");
+      }
     } finally {
       setPreviewLoading(false);
     }
@@ -136,7 +145,10 @@ export default function CreatorSignupPage() {
               className="btn-secondary shrink-0 !px-4 !py-2.5 !text-sm"
             >
               {previewLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="hidden sm:inline">Verifying…</span>
+                </>
               ) : (
                 <>
                   <Instagram className="h-4 w-4" />
@@ -146,7 +158,7 @@ export default function CreatorSignupPage() {
             </button>
           </div>
           <p className="mt-1.5 text-xs text-warm-gray">
-            Public Instagram account required. We fetch followers, engagement &amp; photo.
+            Public account required. Verification usually takes 5–15 seconds.
           </p>
         </div>
 

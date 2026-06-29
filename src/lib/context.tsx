@@ -8,7 +8,6 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { usePathname } from "next/navigation";
 import type {
   SearchFilters,
   ShortlistItem,
@@ -73,7 +72,6 @@ function mergeFilters(stored: Partial<SearchFilters> | undefined): SearchFilters
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
   const [shortlist, setShortlist] = useState<ShortlistItem[]>([]);
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -118,7 +116,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refreshAuth();
-  }, [refreshAuth, pathname]);
+  }, [refreshAuth]);
 
   useEffect(() => {
     if (!hydrated) return;

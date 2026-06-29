@@ -14,6 +14,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { SearchFilters } from "@/components/SearchFilters";
+import { MarketplaceStats } from "@/components/MarketplaceStats";
 import { useApp } from "@/lib/context";
 
 const STATS = [
@@ -119,6 +120,15 @@ export default function HomePage() {
               Preview free · Business signup required to send deal requests
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="border-t border-cream-dark bg-white/80 px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-3xl">
+          <p className="mb-6 text-center text-sm font-medium uppercase tracking-wide text-warm-gray">
+            Live marketplace
+          </p>
+          <MarketplaceStats />
         </div>
       </section>
 

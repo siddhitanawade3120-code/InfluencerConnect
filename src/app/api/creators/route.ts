@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 import {
   withMongo,
   docToCreator,
-  hasDatabaseUrl,
   type CreatorDocument,
 } from "@/lib/mongodb";
 import { inputToDbData, type CreatorInput } from "@/lib/creator-mapper";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { dbToCreator } from "@/lib/creator-mapper";
 import {
-  buildMongoCreatorFilter,
+  buildPrismaCreatorWhere,
   parseCreatorListQuery,
 } from "@/lib/creator-query";
 import { sortCreatorsByMatchScore } from "@/lib/match-score";
@@ -18,30 +19,15 @@ import {
   redactCreatorContact,
   shouldShowCreatorContact,
 } from "@/lib/marketplace-access";
-import {
-  getRegisteredCreatorIds,
-  toObjectIds,
-} from "@/lib/creator-registry";
+import { getRegisteredCreatorIds } from "@/lib/creator-registry";
+import { cacheThrough } from "@/lib/cache";
 import type { Creator } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const COLLECTION = "Creator";
-
-function dbErrorResponse(err: unknown) {
-  const message = err instanceof Error ? err.message : "Database connection failed";
-  const hint = !hasDatabaseUrl()
-    ? "Add DATABASE_URL in Netlify env vars (scope: All), then Clear cache and redeploy."
-    : message.toLowerCase().includes("timed out") ||
-        message.toLowerCase().includes("server selection")
-      ? "MongoDB Atlas → Network Access → Add IP 0.0.0.0/0 (Allow from anywhere)."
-      : "Check DATABASE_URL password and that the Atlas cluster is running.";
-  return NextResponse.json(
-    { error: message, hasDatabaseUrl: hasDatabaseUrl(), hint },
-    { status: 503 }
-  );
-}
+const LIST_CACHE_TTL = 30_000;
 
 export async function GET(request: Request) {
   try {
@@ -55,44 +41,45 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const listQuery = parseCreatorListQuery(searchParams);
-    const baseFilter = buildMongoCreatorFilter(listQuery);
+    const cacheKey = `${user?.id ?? "guest"}:${searchParams.toString()}`;
 
-    // Only creators who signed up and linked their account — not admin-only listings
-    const registeredIds = await getRegisteredCreatorIds();
-    if (registeredIds.length === 0) {
-      return NextResponse.json([]);
-    }
+    const creators = await cacheThrough(
+      "creator-list",
+      cacheKey,
+      LIST_CACHE_TTL,
+      async () => {
+        const registeredIds = await getRegisteredCreatorIds();
+        if (registeredIds.length === 0) return [] as Creator[];
 
-    const filter =
-      Object.keys(baseFilter).length === 0
-        ? { _id: { $in: toObjectIds(registeredIds) } }
-        : { $and: [baseFilter, { _id: { $in: toObjectIds(registeredIds) } }] };
+        const where = buildPrismaCreatorWhere(listQuery, registeredIds);
+        const rows = await prisma.creator.findMany({ where });
 
-    const rows = await withMongo((db) =>
-      db.collection<CreatorDocument>(COLLECTION).find(filter).toArray()
+        let list = rows.map(dbToCreator);
+        const brandProfile = user?.role === "BRAND" ? user.brandProfile : null;
+
+        if (brandProfile) {
+          list = sortCreatorsByMatchScore(list, {
+            brandBudgetMin: brandProfile.budgetMin,
+            brandBudgetMax: brandProfile.budgetMax,
+          });
+        } else {
+          list.sort((a, b) => b.followerCount - a.followerCount);
+        }
+
+        return list;
+      }
     );
 
-    let creators: Creator[] = rows.map(docToCreator);
     const showContact = shouldShowCreatorContact(user);
-
-    const brandProfile =
-      user?.role === "BRAND" ? user.brandProfile : null;
-
-    if (brandProfile) {
-      creators = sortCreatorsByMatchScore(creators, {
-        brandBudgetMin: brandProfile.budgetMin,
-        brandBudgetMax: brandProfile.budgetMax,
-      });
-    } else {
-      creators.sort((a, b) => b.followerCount - a.followerCount);
-    }
-
-    return NextResponse.json(
+    const response = NextResponse.json(
       creators.map((c) => redactCreatorContact(c, showContact))
     );
+    response.headers.set("Cache-Control", "private, max-age=15, stale-while-revalidate=30");
+    return response;
   } catch (err) {
     console.error("GET /api/creators:", err);
-    return dbErrorResponse(err);
+    const message = err instanceof Error ? err.message : "Database connection failed";
+    return NextResponse.json({ error: message }, { status: 503 });
   }
 }
 

@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { SlidersHorizontal, ArrowLeft, Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { SlidersHorizontal, ArrowLeft, AlertCircle, Sparkles, Share2 } from "lucide-react";
 import { SearchFilters } from "@/components/SearchFilters";
 import { CreatorCard } from "@/components/CreatorCard";
+import { CreatorGridSkeleton } from "@/components/CreatorCardSkeleton";
+import { MarketplaceStats } from "@/components/MarketplaceStats";
 import { useApp } from "@/lib/context";
 import { useCreators } from "@/lib/use-creators";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { sortCreators, type SortOption } from "@/lib/types";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -18,10 +21,15 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 
 export default function ResultsPage() {
   const { filters, updateFilters, resetFilters, shortlist, user, authLoading } = useApp();
+  const debouncedFilters = useDebouncedValue(filters, 350);
   const hasBrandBudget = user?.role === "BRAND" && !!user.brandProfile;
   const [sort, setSort] = useState<SortOption>("followers");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const { creators, loading, refreshing, error: fetchError } = useCreators({ filters });
+  const { creators, loading, error: fetchError } = useCreators({ filters: debouncedFilters });
+  const [copied, setCopied] = useState(false);
+
+  const filtersPending =
+    JSON.stringify(filters) !== JSON.stringify(debouncedFilters);
 
   useEffect(() => {
     if (!authLoading && hasBrandBudget) {
@@ -37,16 +45,33 @@ export default function ResultsPage() {
     [hasBrandBudget]
   );
 
-  const results = useMemo(
-    () => sortCreators(creators, sort),
-    [creators, sort]
-  );
+  const results = useMemo(() => sortCreators(creators, sort), [creators, sort]);
 
   const showSignupBanner = !authLoading && !user;
+  const inviteUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/signup/creator`
+      : "/signup/creator";
+
+  const copyInvite = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        `Join InfluConnect — get collab offers from local businesses in Vasai-Virar: ${inviteUrl}`
+      );
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
 
   return (
     <div className="page-gradient min-h-[calc(100vh-57px)]">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        <div className="mb-6">
+          <MarketplaceStats compact />
+        </div>
+
         {showSignupBanner && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-terracotta/20 bg-gradient-to-r from-terracotta/10 to-sage-light/20 px-5 py-4">
             <div className="flex items-start gap-3">
@@ -75,8 +100,8 @@ export default function ResultsPage() {
               <ArrowLeft className="h-4 w-4" /> Back to search
             </Link>
             <h1 className="text-2xl font-bold text-warm-brown">
-              {loading
-                ? "Loading creators…"
+              {loading || filtersPending
+                ? "Finding creators…"
                 : fetchError
                   ? "Could not load creators"
                   : `${results.length} registered creator${results.length !== 1 ? "s" : ""}`}
@@ -87,9 +112,6 @@ export default function ResultsPage() {
               {filters.budgetMin > 500 || filters.budgetMax < 10000
                 ? ` · ₹${filters.budgetMin.toLocaleString("en-IN")}–₹${filters.budgetMax.toLocaleString("en-IN")}`
                 : ""}
-              {refreshing && (
-                <span className="ml-2 text-sage-dark"> · Updating stats from Instagram…</span>
-              )}
             </p>
           </div>
 
@@ -130,13 +152,8 @@ export default function ResultsPage() {
           <div className="mb-6 flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
-              <p className="font-semibold">Database connection failed</p>
+              <p className="font-semibold">Could not load creators</p>
               <p className="mt-1">{fetchError}</p>
-              <p className="mt-2 text-red-700">
-                Fix in MongoDB Atlas: (1) Resume cluster if paused, (2) Network Access →
-                Add IP → Allow from anywhere for dev, (3) restart{" "}
-                <code className="rounded bg-red-100 px-1">npm run dev</code>
-              </p>
             </div>
           </div>
         )}
@@ -154,24 +171,27 @@ export default function ResultsPage() {
           </aside>
 
           <div className="min-w-0 flex-1">
-            {loading ? (
-              <div className="flex items-center justify-center py-20 text-warm-gray">
-                <Loader2 className="h-8 w-8 animate-spin text-terracotta" />
-              </div>
+            {loading || filtersPending ? (
+              <CreatorGridSkeleton count={6} />
             ) : fetchError ? null : results.length === 0 ? (
-              <div className="card p-12 text-center">
+              <div className="card space-y-4 p-12 text-center">
                 <p className="text-lg font-medium text-warm-brown">
                   No registered creators match your filters yet
                 </p>
-                <p className="mt-2 text-sm text-warm-gray">
-                  Try widening your budget or area — or ask creators in your network to join
-                  InfluConnect.
+                <p className="text-sm text-warm-gray">
+                  Widen your budget or area — or invite creators to join InfluConnect.
                 </p>
-                <button type="button" onClick={resetFilters} className="btn-primary mt-4 !text-sm">
-                  Reset filters
-                </button>
-                <Link href="/" className="mt-4 block text-terracotta hover:underline">
-                  Adjust search on home page
+                <div className="flex flex-wrap justify-center gap-3">
+                  <button type="button" onClick={resetFilters} className="btn-primary !text-sm">
+                    Reset filters
+                  </button>
+                  <button type="button" onClick={copyInvite} className="btn-secondary !text-sm">
+                    <Share2 className="h-4 w-4" />
+                    {copied ? "Link copied!" : "Copy creator invite link"}
+                  </button>
+                </div>
+                <Link href="/signup/creator" className="block text-sm text-terracotta hover:underline">
+                  Or join as a creator yourself →
                 </Link>
               </div>
             ) : (

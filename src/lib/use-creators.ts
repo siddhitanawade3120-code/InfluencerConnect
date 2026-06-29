@@ -7,9 +7,12 @@ import { filtersToSearchParams } from "@/lib/creator-query";
 interface UseCreatorsOptions {
   filters?: SearchFilters;
   activeOnly?: boolean;
-  /** Background Instagram refresh for stale profiles (default true) */
+  /** Background Instagram refresh — off by default (slow). Enable only when needed. */
   autoRefresh?: boolean;
 }
+
+const clientCache = new Map<string, { data: Creator[]; at: number }>();
+const CLIENT_CACHE_MS = 20_000;
 
 function buildCreatorsUrl(filters: SearchFilters | undefined, activeOnly: boolean): string {
   if (filters) {
@@ -23,15 +26,28 @@ async function fetchCreators(
   filters: SearchFilters | undefined,
   activeOnly: boolean
 ): Promise<Creator[]> {
-  const r = await fetch(buildCreatorsUrl(filters, activeOnly));
+  const url = buildCreatorsUrl(filters, activeOnly);
+  const cached = clientCache.get(url);
+  if (cached && Date.now() - cached.at < CLIENT_CACHE_MS) {
+    return cached.data;
+  }
+
+  const r = await fetch(url);
   const data = await r.json();
   if (!r.ok) throw new Error(data.error ?? "Failed to load creators");
   if (!Array.isArray(data)) throw new Error("Invalid response from server");
-  return data as Creator[];
+
+  const creators = data as Creator[];
+  clientCache.set(url, { data: creators, at: Date.now() });
+  return creators;
+}
+
+export function invalidateCreatorsClientCache(): void {
+  clientCache.clear();
 }
 
 export function useCreators(options: UseCreatorsOptions = {}) {
-  const { filters, activeOnly = true, autoRefresh = true } = options;
+  const { filters, activeOnly = true, autoRefresh = false } = options;
   const filterKey = filters ? filtersToSearchParams(filters, activeOnly).toString() : "";
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,17 +100,18 @@ export function useCreators(options: UseCreatorsOptions = {}) {
         const res = await fetch("/api/creators/refresh-stale", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ limit: 3, activeOnly }),
+          body: JSON.stringify({ limit: 2, activeOnly }),
         });
         const data = await res.json();
         if (cancelled) return;
 
         if (data.refreshed > 0) {
+          invalidateCreatorsClientCache();
           const updated = await fetchCreators(filters, activeOnly);
           if (!cancelled) setCreators(updated);
         }
       } catch {
-        // Silent — page still shows cached DB data
+        /* silent */
       } finally {
         if (!cancelled) setRefreshing(false);
       }

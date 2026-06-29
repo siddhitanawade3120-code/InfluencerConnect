@@ -8,6 +8,7 @@ import {
   sessionCookieOptions,
 } from "@/lib/auth";
 import { ensureCreatorFromInstagram } from "@/lib/creator-import";
+import { invalidateRegisteredCreatorCache } from "@/lib/creator-registry";
 
 export const runtime = "nodejs";
 
@@ -63,6 +64,7 @@ export async function POST(request: Request) {
     }
 
     const directoryCreator = imported.creator;
+    invalidateRegisteredCreatorCache();
 
     const alreadyClaimed = await prisma.creatorProfile.findFirst({
       where: { creatorId: directoryCreator.id },

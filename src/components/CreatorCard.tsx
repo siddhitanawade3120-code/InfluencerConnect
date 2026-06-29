@@ -43,7 +43,7 @@ export function CreatorCard({ creator, showMatchScore = false }: CreatorCardProp
 
   return (
     <>
-      <article className="card card-hover flex flex-col overflow-hidden !p-0">
+      <article className="card card-hover flex flex-col overflow-hidden !p-0 ring-1 ring-cream-dark/50 transition-all hover:ring-terracotta/20">
         <Link href={`/creators/${creator.id}`} className="block p-5 transition-colors hover:bg-cream/40">
           <div className="flex items-start gap-4">
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-cream-dark">
