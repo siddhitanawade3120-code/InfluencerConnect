@@ -4,11 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useApp } from "@/lib/context";
+
 const inputClass =
   "w-full rounded-xl border border-cream-dark px-4 py-2.5 focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/20";
 
 export default function CreatorSignupPage() {
   const router = useRouter();
+  const { refreshAuth } = useApp();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
@@ -32,6 +35,7 @@ export default function CreatorSignupPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Signup failed");
+      await refreshAuth();
       router.push(data.redirect ?? "/dashboard/creator");
       router.refresh();
     } catch (err) {

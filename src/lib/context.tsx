@@ -8,12 +8,34 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import type {
   SearchFilters,
   ShortlistItem,
   OutreachStatus,
 } from "@/lib/types";
 import { DEFAULT_FILTERS } from "@/lib/types";
+
+export interface SessionUser {
+  id: string;
+  email: string;
+  role: "BRAND" | "CREATOR";
+  name: string;
+  phone?: string | null;
+  isVerified: boolean;
+  brandProfile?: {
+    businessName: string;
+    budgetMin: number;
+    budgetMax: number;
+    category: string;
+    city: string;
+    area: string;
+  } | null;
+  creatorProfile?: {
+    instagramHandle: string;
+    claimedCreatorId?: string | null;
+  } | null;
+}
 
 interface AppContextValue {
   filters: SearchFilters;
@@ -25,8 +47,11 @@ interface AppContextValue {
   removeFromShortlist: (creatorId: string) => void;
   isInShortlist: (creatorId: string) => boolean;
   updateShortlistStatus: (creatorId: string, status: OutreachStatus) => void;
+  /** True when a brand/creator session cookie is active */
   isSignedUp: boolean;
-  setSignedUp: (value: boolean) => void;
+  user: SessionUser | null;
+  authLoading: boolean;
+  refreshAuth: () => Promise<void>;
   businessName: string;
   setBusinessName: (name: string) => void;
 }
@@ -48,11 +73,33 @@ function mergeFilters(stored: Partial<SearchFilters> | undefined): SearchFilters
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
   const [shortlist, setShortlist] = useState<ShortlistItem[]>([]);
-  const [isSignedUp, setSignedUp] = useState(false);
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [businessName, setBusinessName] = useState("your cloud kitchen");
   const [hydrated, setHydrated] = useState(false);
+
+  const refreshAuth = useCallback(async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        const nextUser = (data.user ?? null) as SessionUser | null;
+        setUser(nextUser);
+        if (nextUser?.brandProfile?.businessName) {
+          setBusinessName(nextUser.brandProfile.businessName);
+        }
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    } finally {
+      setAuthLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -61,7 +108,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const parsed = JSON.parse(raw);
         if (parsed.filters) setFilters(mergeFilters(parsed.filters));
         if (parsed.shortlist) setShortlist(parsed.shortlist);
-        if (parsed.isSignedUp) setSignedUp(parsed.isSignedUp);
         if (parsed.businessName) setBusinessName(parsed.businessName);
       }
     } catch {
@@ -71,12 +117,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    refreshAuth();
+  }, [refreshAuth, pathname]);
+
+  useEffect(() => {
     if (!hydrated) return;
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ filters, shortlist, isSignedUp, businessName })
+      JSON.stringify({ filters, shortlist, businessName })
     );
-  }, [filters, shortlist, isSignedUp, businessName, hydrated]);
+  }, [filters, shortlist, businessName, hydrated]);
 
   const updateFilters = useCallback((partial: Partial<SearchFilters>) => {
     setFilters((prev) => ({ ...prev, ...partial }));
@@ -114,6 +164,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const isSignedUp = !!user;
+
   return (
     <AppContext.Provider
       value={{
@@ -127,7 +179,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         isInShortlist,
         updateShortlistStatus,
         isSignedUp,
-        setSignedUp,
+        user,
+        authLoading,
+        refreshAuth,
         businessName,
         setBusinessName,
       }}

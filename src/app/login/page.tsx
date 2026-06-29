@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { LogIn } from "lucide-react";
+import { useApp } from "@/lib/context";
 
 const inputClass =
   "w-full rounded-xl border border-cream-dark px-4 py-3 focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/20";
@@ -11,6 +12,7 @@ const inputClass =
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refreshAuth } = useApp();
   const redirect = searchParams.get("redirect");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,6 +31,7 @@ function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Login failed");
+      await refreshAuth();
       router.push(redirect ?? data.redirect ?? "/");
       router.refresh();
     } catch (err) {

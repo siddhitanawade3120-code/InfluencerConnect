@@ -14,7 +14,8 @@ interface CreatorProfileActionsProps {
 }
 
 export function CreatorProfileActions({ creator }: CreatorProfileActionsProps) {
-  const { isInShortlist, addToShortlist, removeFromShortlist, isSignedUp } = useApp();
+  const { isInShortlist, addToShortlist, removeFromShortlist, isSignedUp, authLoading } =
+    useApp();
   const [showSignup, setShowSignup] = useState(false);
   const [dealRequested, setDealRequested] = useState(false);
   const shortlisted = isInShortlist(creator.id);
@@ -25,6 +26,7 @@ export function CreatorProfileActions({ creator }: CreatorProfileActionsProps) {
   };
 
   const handleDealRequest = () => {
+    if (authLoading) return;
     if (!isSignedUp) {
       setShowSignup(true);
       return;
@@ -45,7 +47,11 @@ export function CreatorProfileActions({ creator }: CreatorProfileActionsProps) {
           {dealRequested ? "Deal request coming soon" : "Send Deal Request"}
         </button>
 
-        {isSignedUp ? (
+        {authLoading ? (
+          <div className="flex w-full items-center justify-center rounded-xl border border-cream-dark py-3 text-sm text-warm-gray">
+            Checking session…
+          </div>
+        ) : isSignedUp ? (
           <InstagramDmButton handle={creator.instagramHandle} className="w-full" />
         ) : (
           <button

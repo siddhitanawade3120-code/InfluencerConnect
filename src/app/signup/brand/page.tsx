@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useApp } from "@/lib/context";
 import { AREAS, CITIES } from "@/lib/types";
 
 const CATEGORIES = [
@@ -19,6 +20,7 @@ const inputClass =
 
 export default function BrandSignupPage() {
   const router = useRouter();
+  const { refreshAuth } = useApp();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
@@ -47,6 +49,7 @@ export default function BrandSignupPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Signup failed");
+      await refreshAuth();
       router.push(data.redirect ?? "/dashboard/brand");
       router.refresh();
     } catch (err) {

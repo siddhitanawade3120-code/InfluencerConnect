@@ -28,7 +28,8 @@ interface CreatorCardProps {
 }
 
 export function CreatorCard({ creator, showMatchScore = false }: CreatorCardProps) {
-  const { isInShortlist, addToShortlist, removeFromShortlist, isSignedUp } = useApp();
+  const { isInShortlist, addToShortlist, removeFromShortlist, isSignedUp, authLoading } =
+    useApp();
   const [showSignup, setShowSignup] = useState(false);
   const shortlisted = isInShortlist(creator.id);
   const fresh = isRecentlyVerified(creator.lastVerifiedDate);
@@ -147,7 +148,11 @@ export function CreatorCard({ creator, showMatchScore = false }: CreatorCardProp
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
           </div>
-          {isSignedUp ? (
+          {authLoading ? (
+            <div className="flex w-full items-center justify-center rounded-xl border border-cream-dark py-2.5 text-sm text-warm-gray">
+              …
+            </div>
+          ) : isSignedUp ? (
             <InstagramDmButton handle={creator.instagramHandle} className="w-full" />
           ) : (
             <button

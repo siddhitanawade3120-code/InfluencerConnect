@@ -17,23 +17,17 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 export default function ResultsPage() {
-  const { filters, updateFilters, resetFilters, shortlist } = useApp();
+  const { filters, updateFilters, resetFilters, shortlist, user, authLoading } = useApp();
+  const hasBrandBudget = user?.role === "BRAND" && !!user.brandProfile;
   const [sort, setSort] = useState<SortOption>("followers");
-  const [hasBrandBudget, setHasBrandBudget] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const { creators, loading, refreshing, error: fetchError } = useCreators({ filters });
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.user?.role === "BRAND" && data.user.brandProfile) {
-          setHasBrandBudget(true);
-          setSort("match");
-        }
-      })
-      .catch(() => {});
-  }, []);
+    if (!authLoading && hasBrandBudget) {
+      setSort("match");
+    }
+  }, [authLoading, hasBrandBudget]);
 
   const sortOptions = useMemo(
     () =>
