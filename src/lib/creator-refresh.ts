@@ -4,7 +4,7 @@ import {
 } from "@/lib/instagram-scraper";
 import { inputToDbData, parseJsonArray } from "@/lib/creator-mapper";
 import {
-  getDb,
+  withMongo,
   docToCreator,
   ObjectId,
   isValidObjectId,
@@ -54,32 +54,35 @@ export async function refreshCreatorFromInstagram(
       })
     );
 
-    const db = await getDb();
-    const now = new Date();
-    const existing = await db.collection<CreatorDocument>(COLLECTION).findOne({
-      instagramHandle: creatorData.instagramHandle,
-    });
-
-    if (existing) {
-      await db.collection(COLLECTION).updateOne(
-        { _id: existing._id },
-        { $set: { ...creatorData, updatedAt: now } }
-      );
-      const doc = await db.collection<CreatorDocument>(COLLECTION).findOne({
-        _id: existing._id,
+    const creator = await withMongo(async (db) => {
+      const now = new Date();
+      const existing = await db.collection<CreatorDocument>(COLLECTION).findOne({
+        instagramHandle: creatorData.instagramHandle,
       });
-      return { handle: normalized, ok: true, creator: docToCreator(doc!) };
-    }
 
-    const result = await db.collection(COLLECTION).insertOne({
-      ...creatorData,
-      createdAt: now,
-      updatedAt: now,
+      if (existing) {
+        await db.collection(COLLECTION).updateOne(
+          { _id: existing._id },
+          { $set: { ...creatorData, updatedAt: now } }
+        );
+        const doc = await db.collection<CreatorDocument>(COLLECTION).findOne({
+          _id: existing._id,
+        });
+        return docToCreator(doc!);
+      }
+
+      const result = await db.collection(COLLECTION).insertOne({
+        ...creatorData,
+        createdAt: now,
+        updatedAt: now,
+      });
+      const doc = await db.collection<CreatorDocument>(COLLECTION).findOne({
+        _id: result.insertedId,
+      });
+      return docToCreator(doc!);
     });
-    const doc = await db.collection<CreatorDocument>(COLLECTION).findOne({
-      _id: result.insertedId,
-    });
-    return { handle: normalized, ok: true, creator: docToCreator(doc!) };
+
+    return { handle: normalized, ok: true, creator };
   } catch (err) {
     return {
       handle: normalized,
@@ -122,13 +125,14 @@ export async function refreshStaleCreators(
   const limit = Math.max(1, options.limit ?? 3);
   const activeOnly = options.activeOnly !== false;
 
-  const db = await getDb();
   const filter = activeOnly ? { isVerifiedActive: true } : {};
-  const rows = await db
-    .collection<CreatorDocument>(COLLECTION)
-    .find(filter)
-    .sort({ lastVerifiedDate: 1 })
-    .toArray();
+  const rows = await withMongo((db) =>
+    db
+      .collection<CreatorDocument>(COLLECTION)
+      .find(filter)
+      .sort({ lastVerifiedDate: 1 })
+      .toArray()
+  );
 
   const stale = rows.filter((r) => isCreatorStale(r.lastVerifiedDate));
   const batch = stale.slice(0, limit);
@@ -161,24 +165,23 @@ export async function refreshStaleCreators(
 
 export interface RefreshAllOptions {
   activeOnly?: boolean;
-  /** Pause between Instagram requests to reduce rate limits */
   delayMs?: number;
 }
 
-/** Re-scrape every creator in the database (admin one-click refresh) */
 export async function refreshAllCreators(
   options: RefreshAllOptions = {}
 ): Promise<RefreshStaleSummary> {
   const activeOnly = options.activeOnly !== false;
   const delayMs = options.delayMs ?? 1500;
 
-  const db = await getDb();
   const filter = activeOnly ? { isVerifiedActive: true } : {};
-  const rows = await db
-    .collection<CreatorDocument>(COLLECTION)
-    .find(filter)
-    .sort({ instagramHandle: 1 })
-    .toArray();
+  const rows = await withMongo((db) =>
+    db
+      .collection<CreatorDocument>(COLLECTION)
+      .find(filter)
+      .sort({ instagramHandle: 1 })
+      .toArray()
+  );
 
   const summary: RefreshStaleSummary = {
     refreshed: 0,
@@ -209,13 +212,14 @@ export async function refreshAllCreators(
 }
 
 export async function refreshCreatorById(id: string): Promise<RefreshResult> {
-  const db = await getDb();
   if (!isValidObjectId(id)) {
     return { handle: id, ok: false, error: "Invalid creator id" };
   }
-  const doc = await db.collection<CreatorDocument>(COLLECTION).findOne({
-    _id: new ObjectId(id),
-  });
+
+  const doc = await withMongo((db) =>
+    db.collection<CreatorDocument>(COLLECTION).findOne({ _id: new ObjectId(id) })
+  );
+
   if (!doc) {
     return { handle: id, ok: false, error: "Creator not found" };
   }

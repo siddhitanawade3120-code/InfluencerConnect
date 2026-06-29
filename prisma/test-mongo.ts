@@ -1,8 +1,7 @@
-import { getDb } from "../src/lib/mongodb";
+import { withMongo } from "../src/lib/mongodb";
 
 async function main() {
-  const db = await getDb();
-  const count = await db.collection("Creator").countDocuments();
+  const count = await withMongo((db) => db.collection("Creator").countDocuments());
   console.log("Connected! Creators in DB:", count);
 }
 

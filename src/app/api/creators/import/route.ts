@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { scrapeInstagramProfile, scrapedToCreatorInput } from "@/lib/instagram-scraper";
 import { refreshCreatorFromInstagram } from "@/lib/creator-refresh";
-import { getDb, docToCreator, type CreatorDocument } from "@/lib/mongodb";
+import { withMongo, docToCreator, type CreatorDocument } from "@/lib/mongodb";
 import { inputToDbData } from "@/lib/creator-mapper";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const COLLECTION = "Creator";
 
@@ -16,12 +19,11 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const username = (body.username ?? body.instagramHandle ?? "").toString();
-
-    const db = await getDb();
     const handle = username.replace(/^@/, "").trim().toLowerCase();
-    const existing = await db.collection<CreatorDocument>(COLLECTION).findOne({
-      instagramHandle: handle,
-    });
+
+    const existing = await withMongo((db) =>
+      db.collection<CreatorDocument>(COLLECTION).findOne({ instagramHandle: handle })
+    );
 
     if (existing) {
       const result = await refreshCreatorFromInstagram(handle, {
@@ -60,19 +62,21 @@ export async function POST(request: Request) {
     );
 
     const now = new Date();
-    const result = await db.collection(COLLECTION).insertOne({
-      ...creatorData,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    const doc = await db.collection<CreatorDocument>(COLLECTION).findOne({
-      _id: result.insertedId,
+    const creator = await withMongo(async (db) => {
+      const result = await db.collection(COLLECTION).insertOne({
+        ...creatorData,
+        createdAt: now,
+        updatedAt: now,
+      });
+      const doc = await db.collection<CreatorDocument>(COLLECTION).findOne({
+        _id: result.insertedId,
+      });
+      return docToCreator(doc!);
     });
 
     return NextResponse.json(
       {
-        creator: docToCreator(doc!),
+        creator,
         updated: false,
         message: `@${handle} imported from Instagram`,
       },

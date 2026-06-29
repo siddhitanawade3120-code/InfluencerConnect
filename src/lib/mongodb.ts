@@ -1,41 +1,43 @@
-import { MongoClient, ObjectId, type Document } from "mongodb";
+import { MongoClient, ObjectId, type Db, type Document } from "mongodb";
 import type { Creator } from "./types";
 import { parseJsonArray } from "./creator-mapper";
 
-const globalForMongo = globalThis as unknown as {
-  mongoClient: MongoClient | null;
-  mongoConnectPromise: Promise<MongoClient> | null;
-};
-
 function getUri(): string {
-  const uri = process.env.DATABASE_URL;
-  if (!uri) throw new Error("DATABASE_URL is not set");
+  let uri = (process.env.DATABASE_URL ?? process.env.MONGODB_URI)?.trim();
+  if (!uri) {
+    throw new Error(
+      "DATABASE_URL is not set. In Netlify: Site configuration → Environment variables → add DATABASE_URL, scope All, then redeploy."
+    );
+  }
+  uri = uri.replace(/^["']|["']$/g, "");
   return uri;
 }
 
-async function getClient(): Promise<MongoClient> {
-  if (globalForMongo.mongoClient) return globalForMongo.mongoClient;
-
-  if (!globalForMongo.mongoConnectPromise) {
-    const client = new MongoClient(getUri(), {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
-      socketTimeoutMS: 10000,
-      maxPoolSize: 10,
-      family: 4,
-    });
-    globalForMongo.mongoConnectPromise = client.connect().then((connected) => {
-      globalForMongo.mongoClient = connected;
-      return connected;
-    });
-  }
-
-  return globalForMongo.mongoConnectPromise;
+export function hasDatabaseUrl(): boolean {
+  return Boolean(
+    process.env.DATABASE_URL?.trim() || process.env.MONGODB_URI?.trim()
+  );
 }
 
-export async function getDb() {
-  const client = await getClient();
-  return client.db("influconnect");
+/** Open connection, run query, close — works reliably on Netlify serverless */
+export async function withMongo<T>(fn: (db: Db) => Promise<T>): Promise<T> {
+  const client = new MongoClient(getUri(), {
+    serverSelectionTimeoutMS: 10000,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 15000,
+    maxPoolSize: 1,
+  });
+  try {
+    await client.connect();
+    return await fn(client.db("influconnect"));
+  } finally {
+    await client.close().catch(() => undefined);
+  }
+}
+
+/** @deprecated Prefer withMongo in API routes */
+export async function getDb(): Promise<Db> {
+  throw new Error("Use withMongo() instead of getDb() on serverless");
 }
 
 export interface CreatorDocument extends Document {
