@@ -1,7 +1,6 @@
 export interface SendEmailOptions {
   to: string;
   subject: string;
-  html: string;
   text: string;
 }
 
@@ -53,7 +52,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     user_email: options.to,
     subject: options.subject,
     message: options.text,
-    message_html: options.html,
+    message_html: options.text,
     message_text: options.text,
   };
 

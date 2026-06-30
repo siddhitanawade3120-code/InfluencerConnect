@@ -40,7 +40,7 @@ async function main() {
   });
 
   console.log("subject:", email.subject);
-  console.log("html length:", email.html.length);
+  console.log("preview:\n", email.text.slice(0, 300));
 
   const ok = await sendEmail({ to, ...email });
   console.log(ok ? "SENT" : "FAILED");
