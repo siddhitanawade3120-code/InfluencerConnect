@@ -6,7 +6,6 @@ import {
   InquiryAccessError,
 } from "@/lib/inquiry-access";
 import { serializeMessage } from "@/lib/inquiry-serializer";
-import { notifyNewMessage } from "@/lib/inquiry-notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,12 +76,6 @@ export async function POST(request: Request, { params }: Params) {
     await prisma.inquiry.update({
       where: { id: inquiryId },
       data: { updatedAt: new Date() },
-    });
-
-    notifyNewMessage({
-      inquiryId,
-      senderRole: user.role,
-      senderId: user.id,
     });
 
     return NextResponse.json(serializeMessage(message), { status: 201 });

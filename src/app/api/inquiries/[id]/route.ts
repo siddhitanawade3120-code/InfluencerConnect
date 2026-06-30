@@ -97,18 +97,23 @@ export async function PATCH(request: Request, { params }: Params) {
       }
     }
 
+    const previousBudget = inquiry.offeredBudget;
+
     const updated = await prisma.inquiry.update({
       where: { id },
       data: updateData,
     });
 
+    let counterNote: string | undefined;
+
     if (action === "COUNTER" && body.note) {
+      counterNote = String(body.note).trim();
       await prisma.message.create({
         data: {
           inquiryId: id,
           senderRole: user.role,
           senderId: user.id,
-          body: String(body.note).trim(),
+          body: counterNote,
         },
       });
     } else if (action !== "COUNTER") {
@@ -140,6 +145,10 @@ export async function PATCH(request: Request, { params }: Params) {
       brandId: inquiry.brandId,
       creatorId: inquiry.creatorId,
       actorRole: user.role,
+      action,
+      offeredBudget: updated.offeredBudget,
+      previousBudget: action === "COUNTER" ? previousBudget : undefined,
+      note: counterNote,
     });
 
     return NextResponse.json(serializeInquiry(updated));
