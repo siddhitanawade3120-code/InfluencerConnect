@@ -1,4 +1,4 @@
-import emailjs from "@emailjs/nodejs";
+import emailjs, { EmailJSResponseStatus } from "@emailjs/nodejs";
 
 export interface SendEmailOptions {
   to: string;
@@ -50,7 +50,17 @@ export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
     );
     return true;
   } catch (err) {
-    console.error("[email] EmailJS error:", err);
+    if (err instanceof EmailJSResponseStatus) {
+      console.error("[email] EmailJS error:", err.status, err.text);
+      if (err.status === 403 && err.text.includes("non-browser")) {
+        console.error(
+          "[email] Enable server-side sends: EmailJS dashboard → Account → Security → " +
+            "Allow API requests from non-browser applications"
+        );
+      }
+    } else {
+      console.error("[email] EmailJS error:", err);
+    }
     return false;
   }
 }

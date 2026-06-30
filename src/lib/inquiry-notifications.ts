@@ -105,7 +105,8 @@ async function sendNewInquiryEmail(payload: {
     deadline,
   });
 
-  await sendEmail({ to: creatorUser.email, ...email });
+  const sent = await sendEmail({ to: creatorUser.email, ...email });
+  console.log("[InquiryNotification] INQUIRY_CREATED email to creator", creatorUser.email, sent ? "ok" : "failed");
 }
 
 async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promise<void> {
@@ -142,7 +143,8 @@ async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promi
       note: payload.note,
     });
 
-    await sendEmail({ to: brand.email, ...email });
+    const sent = await sendEmail({ to: brand.email, ...email });
+    console.log("[InquiryNotification] INQUIRY_STATUS_CHANGED email to brand", brand.email, sent ? "ok" : "failed");
     return;
   }
 
@@ -162,5 +164,6 @@ async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promi
     note: payload.note,
   });
 
-  await sendEmail({ to: creatorUser.email, ...email });
+  const sent = await sendEmail({ to: creatorUser.email, ...email });
+  console.log("[InquiryNotification] INQUIRY_STATUS_CHANGED email to creator", creatorUser.email, sent ? "ok" : "failed");
 }
