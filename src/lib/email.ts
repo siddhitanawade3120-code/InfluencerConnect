@@ -37,17 +37,22 @@ export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
   }
 
   try {
-    await emailjs.send(
+    const result = await emailjs.send(
       serviceId,
       templateId,
       {
         to_email: options.to,
+        email: options.to,
+        user_email: options.to,
+        reply_to: options.to,
         subject: options.subject,
+        message: options.text,
         message_html: options.html,
         message_text: options.text,
       },
       { publicKey, privateKey }
     );
+    console.log("[email] sent to", options.to, result.status, result.text);
     return true;
   } catch (err) {
     if (err instanceof EmailJSResponseStatus) {

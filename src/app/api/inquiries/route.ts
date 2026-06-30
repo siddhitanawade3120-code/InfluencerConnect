@@ -193,7 +193,7 @@ export async function POST(request: Request) {
       },
     });
 
-    notifyNewInquiry({
+    await notifyNewInquiry({
       inquiryId: inquiry.id,
       brandId: user.id,
       creatorId,

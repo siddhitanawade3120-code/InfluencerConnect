@@ -44,24 +44,26 @@ function logSkipped(type: string, reason: string, meta?: object) {
   console.log("[InquiryNotification]", { type, skipped: reason, ...meta, at: new Date().toISOString() });
 }
 
-/** Fire-and-forget wrapper — never blocks the API response. */
-function dispatch(promise: Promise<void>, type: string): void {
-  void promise.catch((err) => {
-    console.error(`[InquiryNotification] ${type} failed:`, err);
-  });
-}
-
-export function notifyNewInquiry(payload: {
+/** Await in API routes — Netlify serverless kills fire-and-forget work after the response. */
+export async function notifyNewInquiry(payload: {
   inquiryId: string;
   brandId: string;
   creatorId: string;
   offeredBudget: number;
-}): void {
-  dispatch(sendNewInquiryEmail(payload), "INQUIRY_CREATED");
+}): Promise<void> {
+  try {
+    await sendNewInquiryEmail(payload);
+  } catch (err) {
+    console.error("[InquiryNotification] INQUIRY_CREATED failed:", err);
+  }
 }
 
-export function notifyInquiryStatusChange(payload: InquiryNotificationPayload): void {
-  dispatch(sendStatusChangeEmail(payload), "INQUIRY_STATUS_CHANGED");
+export async function notifyInquiryStatusChange(payload: InquiryNotificationPayload): Promise<void> {
+  try {
+    await sendStatusChangeEmail(payload);
+  } catch (err) {
+    console.error("[InquiryNotification] INQUIRY_STATUS_CHANGED failed:", err);
+  }
 }
 
 async function sendNewInquiryEmail(payload: {
@@ -84,7 +86,10 @@ async function sendNewInquiryEmail(payload: {
   );
 
   if (!creatorUser?.email) {
-    logSkipped("INQUIRY_CREATED", "creator user email not found", payload);
+    logSkipped("INQUIRY_CREATED", "no registered creator account for creatorId", {
+      ...payload,
+      creatorHandle: creator?.instagramHandle,
+    });
     return;
   }
 
@@ -106,7 +111,7 @@ async function sendNewInquiryEmail(payload: {
   });
 
   const sent = await sendEmail({ to: creatorUser.email, ...email });
-  console.log("[InquiryNotification] INQUIRY_CREATED email to creator", creatorUser.email, sent ? "ok" : "failed");
+  console.log("[InquiryNotification] INQUIRY_CREATED", creatorUser.email, sent ? "sent" : "failed");
 }
 
 async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promise<void> {
@@ -124,7 +129,6 @@ async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promi
   const creatorName = creator?.fullName ?? "Creator";
   const creatorHandle = creator?.instagramHandle ?? "creator";
 
-  // Notify the other party (not the actor)
   if (payload.actorRole === "CREATOR") {
     if (!brand?.email) {
       logSkipped("INQUIRY_STATUS_CHANGED", "brand email not found", payload);
@@ -144,12 +148,15 @@ async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promi
     });
 
     const sent = await sendEmail({ to: brand.email, ...email });
-    console.log("[InquiryNotification] INQUIRY_STATUS_CHANGED email to brand", brand.email, sent ? "ok" : "failed");
+    console.log("[InquiryNotification] INQUIRY_STATUS_CHANGED brand", brand.email, sent ? "sent" : "failed");
     return;
   }
 
   if (!creatorUser?.email) {
-    logSkipped("INQUIRY_STATUS_CHANGED", "creator user email not found", payload);
+    logSkipped("INQUIRY_STATUS_CHANGED", "no registered creator account for creatorId", {
+      ...payload,
+      creatorHandle: creator?.instagramHandle,
+    });
     return;
   }
 
@@ -165,5 +172,5 @@ async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promi
   });
 
   const sent = await sendEmail({ to: creatorUser.email, ...email });
-  console.log("[InquiryNotification] INQUIRY_STATUS_CHANGED email to creator", creatorUser.email, sent ? "ok" : "failed");
+  console.log("[InquiryNotification] INQUIRY_STATUS_CHANGED creator", creatorUser.email, sent ? "sent" : "failed");
 }

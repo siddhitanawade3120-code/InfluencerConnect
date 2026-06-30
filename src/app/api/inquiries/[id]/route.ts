@@ -138,7 +138,7 @@ export async function PATCH(request: Request, { params }: Params) {
       }
     }
 
-    notifyInquiryStatusChange({
+    await notifyInquiryStatusChange({
       inquiryId: id,
       previousStatus: currentStatus,
       newStatus: nextStatus,
