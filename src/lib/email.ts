@@ -1,11 +1,13 @@
-import emailjs, { EmailJSResponseStatus } from "@emailjs/nodejs";
-
 export interface SendEmailOptions {
   to: string;
   subject: string;
   html: string;
   text: string;
 }
+
+export type SendEmailResult =
+  | { ok: true }
+  | { ok: false; reason: string };
 
 function getEmailJsConfig() {
   return {
@@ -16,56 +18,75 @@ function getEmailJsConfig() {
   };
 }
 
-export function isEmailConfigured(): boolean {
+export function getEmailConfigStatus(): { configured: boolean; missing: string[] } {
   const { serviceId, templateId, publicKey, privateKey } = getEmailJsConfig();
-  return Boolean(serviceId && templateId && publicKey && privateKey);
+  const missing: string[] = [];
+  if (!serviceId) missing.push("EMAILJS_SERVICE_ID");
+  if (!templateId) missing.push("EMAILJS_TEMPLATE_ID");
+  if (!publicKey) missing.push("EMAILJS_PUBLIC_KEY");
+  if (!privateKey) missing.push("EMAILJS_PRIVATE_KEY");
+  return { configured: missing.length === 0, missing };
+}
+
+export function isEmailConfigured(): boolean {
+  return getEmailConfigStatus().configured;
 }
 
 /**
- * Sends via EmailJS using one template. In the EmailJS dashboard, set:
+ * EmailJS template must set:
  * - To Email: {{to_email}}
  * - Subject: {{subject}}
- * - Body (HTML): {{{message_html}}} or paste {{message_html}} in code view
- * - Optional plain fallback: {{message_text}}
+ * - Body: {{message}}
  */
-export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
+export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   const { serviceId, templateId, publicKey, privateKey } = getEmailJsConfig();
+  const { missing } = getEmailConfigStatus();
 
-  if (!serviceId || !templateId || !publicKey || !privateKey) {
-    console.warn("[email] EmailJS env vars missing — skipping send to", options.to);
-    return false;
+  if (missing.length > 0) {
+    console.warn("[email] Missing env:", missing.join(", "));
+    return { ok: false, reason: `missing env: ${missing.join(", ")}` };
   }
 
+  const templateParams = {
+    to_email: options.to,
+    email: options.to,
+    user_email: options.to,
+    subject: options.subject,
+    message: options.text,
+    message_html: options.html,
+    message_text: options.text,
+  };
+
   try {
-    const result = await emailjs.send(
-      serviceId,
-      templateId,
-      {
-        to_email: options.to,
-        email: options.to,
-        user_email: options.to,
-        reply_to: options.to,
-        subject: options.subject,
-        message: options.text,
-        message_html: options.html,
-        message_text: options.text,
-      },
-      { publicKey, privateKey }
-    );
-    console.log("[email] sent to", options.to, result.status, result.text);
-    return true;
-  } catch (err) {
-    if (err instanceof EmailJSResponseStatus) {
-      console.error("[email] EmailJS error:", err.status, err.text);
-      if (err.status === 403 && err.text.includes("non-browser")) {
+    const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        service_id: serviceId,
+        template_id: templateId,
+        user_id: publicKey,
+        accessToken: privateKey,
+        template_params: templateParams,
+      }),
+    });
+
+    const body = await response.text();
+
+    if (!response.ok) {
+      console.error("[email] EmailJS error:", response.status, body);
+      if (response.status === 403 && body.includes("non-browser")) {
         console.error(
-          "[email] Enable server-side sends: EmailJS dashboard → Account → Security → " +
+          "[email] Enable: EmailJS dashboard → Account → Security → " +
             "Allow API requests from non-browser applications"
         );
       }
-    } else {
-      console.error("[email] EmailJS error:", err);
+      return { ok: false, reason: `EmailJS ${response.status}: ${body.slice(0, 200)}` };
     }
-    return false;
+
+    console.log("[email] sent to", options.to, response.status, body);
+    return { ok: true };
+  } catch (err) {
+    console.error("[email] request failed:", err);
+    return { ok: false, reason: err instanceof Error ? err.message : "send failed" };
   }
 }

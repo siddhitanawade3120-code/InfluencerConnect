@@ -193,7 +193,7 @@ export async function POST(request: Request) {
       },
     });
 
-    await notifyNewInquiry({
+    const emailNotify = await notifyNewInquiry({
       inquiryId: inquiry.id,
       brandId: user.id,
       creatorId,
@@ -201,11 +201,14 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      enrichInquiry(inquiry, {
-        creator,
-        brand: user,
-        messageCount: 1,
-      }),
+      {
+        ...enrichInquiry(inquiry, {
+          creator,
+          brand: user,
+          messageCount: 1,
+        }),
+        emailNotify,
+      },
       { status: 201 }
     );
   } catch (err) {

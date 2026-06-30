@@ -138,7 +138,7 @@ export async function PATCH(request: Request, { params }: Params) {
       }
     }
 
-    await notifyInquiryStatusChange({
+    const emailNotify = await notifyInquiryStatusChange({
       inquiryId: id,
       previousStatus: currentStatus,
       newStatus: nextStatus,
@@ -151,7 +151,7 @@ export async function PATCH(request: Request, { params }: Params) {
       note: counterNote,
     });
 
-    return NextResponse.json(serializeInquiry(updated));
+    return NextResponse.json({ ...serializeInquiry(updated), emailNotify });
   } catch (err) {
     if (err instanceof InquiryAccessError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

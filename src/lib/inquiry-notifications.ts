@@ -20,6 +20,8 @@ export interface InquiryNotificationPayload {
   note?: string;
 }
 
+export type EmailNotifyResult = "sent" | "skipped" | "failed";
+
 async function getInquiryParties(brandId: string, creatorDirectoryId: string) {
   const [brand, creatorProfile, creator] = await Promise.all([
     prisma.user.findUnique({
@@ -44,25 +46,28 @@ function logSkipped(type: string, reason: string, meta?: object) {
   console.log("[InquiryNotification]", { type, skipped: reason, ...meta, at: new Date().toISOString() });
 }
 
-/** Await in API routes — Netlify serverless kills fire-and-forget work after the response. */
 export async function notifyNewInquiry(payload: {
   inquiryId: string;
   brandId: string;
   creatorId: string;
   offeredBudget: number;
-}): Promise<void> {
+}): Promise<EmailNotifyResult> {
   try {
-    await sendNewInquiryEmail(payload);
+    return await sendNewInquiryEmail(payload);
   } catch (err) {
     console.error("[InquiryNotification] INQUIRY_CREATED failed:", err);
+    return "failed";
   }
 }
 
-export async function notifyInquiryStatusChange(payload: InquiryNotificationPayload): Promise<void> {
+export async function notifyInquiryStatusChange(
+  payload: InquiryNotificationPayload
+): Promise<EmailNotifyResult> {
   try {
-    await sendStatusChangeEmail(payload);
+    return await sendStatusChangeEmail(payload);
   } catch (err) {
     console.error("[InquiryNotification] INQUIRY_STATUS_CHANGED failed:", err);
+    return "failed";
   }
 }
 
@@ -71,14 +76,14 @@ async function sendNewInquiryEmail(payload: {
   brandId: string;
   creatorId: string;
   offeredBudget: number;
-}): Promise<void> {
+}): Promise<EmailNotifyResult> {
   if (!isEmailConfigured()) {
     logSkipped("INQUIRY_CREATED", "email not configured", payload);
-    return;
+    return "skipped";
   }
 
   const inquiry = await prisma.inquiry.findUnique({ where: { id: payload.inquiryId } });
-  if (!inquiry) return;
+  if (!inquiry) return "skipped";
 
   const { brand, creatorUser, creator } = await getInquiryParties(
     payload.brandId,
@@ -90,7 +95,7 @@ async function sendNewInquiryEmail(payload: {
       ...payload,
       creatorHandle: creator?.instagramHandle,
     });
-    return;
+    return "skipped";
   }
 
   const brandName = brand?.brandProfile?.businessName ?? brand?.name ?? "A brand";
@@ -110,14 +115,15 @@ async function sendNewInquiryEmail(payload: {
     deadline,
   });
 
-  const sent = await sendEmail({ to: creatorUser.email, ...email });
-  console.log("[InquiryNotification] INQUIRY_CREATED", creatorUser.email, sent ? "sent" : "failed");
+  const result = await sendEmail({ to: creatorUser.email, ...email });
+  console.log("[InquiryNotification] INQUIRY_CREATED", creatorUser.email, result);
+  return result.ok ? "sent" : "failed";
 }
 
-async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promise<void> {
+async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promise<EmailNotifyResult> {
   if (!isEmailConfigured()) {
     logSkipped("INQUIRY_STATUS_CHANGED", "email not configured", payload);
-    return;
+    return "skipped";
   }
 
   const { brand, creatorUser, creator } = await getInquiryParties(
@@ -131,8 +137,11 @@ async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promi
 
   if (payload.actorRole === "CREATOR") {
     if (!brand?.email) {
-      logSkipped("INQUIRY_STATUS_CHANGED", "brand email not found", payload);
-      return;
+      logSkipped("INQUIRY_STATUS_CHANGED", "brand email not found", {
+        action: payload.action,
+        brandId: payload.brandId,
+      });
+      return "skipped";
     }
 
     const email = statusChangeEmailForBrand({
@@ -147,9 +156,9 @@ async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promi
       note: payload.note,
     });
 
-    const sent = await sendEmail({ to: brand.email, ...email });
-    console.log("[InquiryNotification] INQUIRY_STATUS_CHANGED brand", brand.email, sent ? "sent" : "failed");
-    return;
+    const result = await sendEmail({ to: brand.email, ...email });
+    console.log("[InquiryNotification] INQUIRY_STATUS_CHANGED → brand", brand.email, result);
+    return result.ok ? "sent" : "failed";
   }
 
   if (!creatorUser?.email) {
@@ -157,7 +166,7 @@ async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promi
       ...payload,
       creatorHandle: creator?.instagramHandle,
     });
-    return;
+    return "skipped";
   }
 
   const email = statusChangeEmailForCreator({
@@ -171,6 +180,7 @@ async function sendStatusChangeEmail(payload: InquiryNotificationPayload): Promi
     note: payload.note,
   });
 
-  const sent = await sendEmail({ to: creatorUser.email, ...email });
-  console.log("[InquiryNotification] INQUIRY_STATUS_CHANGED creator", creatorUser.email, sent ? "sent" : "failed");
+  const result = await sendEmail({ to: creatorUser.email, ...email });
+  console.log("[InquiryNotification] INQUIRY_STATUS_CHANGED → creator", creatorUser.email, result);
+  return result.ok ? "sent" : "failed";
 }
