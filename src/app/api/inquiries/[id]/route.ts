@@ -8,7 +8,7 @@ import {
   resolveStatusAfterAction,
 } from "@/lib/inquiry-access";
 import { enrichInquiry, serializeInquiry } from "@/lib/inquiry-serializer";
-import { notifyInquiryStatusChange } from "@/lib/inquiry-notifications";
+import { scheduleInquiryStatusEmail } from "@/lib/schedule-inquiry-email";
 import { isInquiryStatus } from "@/lib/inquiry-types";
 
 export const runtime = "nodejs";
@@ -99,46 +99,48 @@ export async function PATCH(request: Request, { params }: Params) {
 
     const previousBudget = inquiry.offeredBudget;
 
-    const updated = await prisma.inquiry.update({
-      where: { id },
-      data: updateData,
-    });
+    const autoBody =
+      action !== "COUNTER"
+        ? (
+            {
+              ACCEPT: "Creator accepted the deal.",
+              DECLINE: "Creator declined the deal.",
+              CONFIRM: "Brand confirmed the negotiated terms.",
+              MARK_DELIVERED: "Creator marked content as delivered.",
+              MARK_COMPLETED: "Brand marked the deal as completed.",
+              CANCEL: "Brand cancelled the deal.",
+            } as Partial<Record<typeof action, string>>
+          )[action]
+        : undefined;
 
-    let counterNote: string | undefined;
+    const messageBody =
+      action === "COUNTER" && body.note
+        ? String(body.note).trim()
+        : autoBody;
 
-    if (action === "COUNTER" && body.note) {
-      counterNote = String(body.note).trim();
-      await prisma.message.create({
-        data: {
-          inquiryId: id,
-          senderRole: user.role,
-          senderId: user.id,
-          body: counterNote,
-        },
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.inquiry.update({
+        where: { id },
+        data: updateData,
       });
-    } else if (action !== "COUNTER") {
-      const actionMessages: Partial<Record<typeof action, string>> = {
-        ACCEPT: "Creator accepted the deal.",
-        DECLINE: "Creator declined the deal.",
-        CONFIRM: "Brand confirmed the negotiated terms.",
-        MARK_DELIVERED: "Creator marked content as delivered.",
-        MARK_COMPLETED: "Brand marked the deal as completed.",
-        CANCEL: "Brand cancelled the deal.",
-      };
-      const autoBody = actionMessages[action];
-      if (autoBody) {
-        await prisma.message.create({
+
+      if (messageBody) {
+        await tx.message.create({
           data: {
             inquiryId: id,
             senderRole: user.role,
             senderId: user.id,
-            body: autoBody,
+            body: messageBody,
           },
         });
       }
-    }
 
-    const emailNotify = await notifyInquiryStatusChange({
+      return row;
+    });
+
+    const counterNote = action === "COUNTER" && body.note ? String(body.note).trim() : undefined;
+
+    scheduleInquiryStatusEmail({
       inquiryId: id,
       previousStatus: currentStatus,
       newStatus: nextStatus,
@@ -151,7 +153,7 @@ export async function PATCH(request: Request, { params }: Params) {
       note: counterNote,
     });
 
-    return NextResponse.json({ ...serializeInquiry(updated), emailNotify });
+    return NextResponse.json(serializeInquiry(updated));
   } catch (err) {
     if (err instanceof InquiryAccessError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

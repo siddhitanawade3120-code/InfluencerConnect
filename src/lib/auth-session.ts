@@ -10,11 +10,14 @@ export interface SessionPayload {
 }
 
 export function getSessionSecretString(): string {
-  return (
-    process.env.SESSION_SECRET?.trim() ||
-    process.env.ADMIN_PASSWORD?.trim() ||
-    "influconnect-dev-session-secret"
-  );
+  const secret = process.env.SESSION_SECRET?.trim();
+  if (secret) return secret;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET must be set in production");
+  }
+
+  return "influconnect-dev-session-secret";
 }
 
 function getSessionSecret(): Uint8Array {

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import {
-  canRunAutoRefresh,
   getStaleDays,
   refreshStaleCreators,
 } from "@/lib/creator-refresh";
@@ -14,35 +13,19 @@ function isCronAuthorized(request: Request): boolean {
 }
 
 export async function POST(request: Request) {
+  const isAdmin = await isAdminAuthenticated();
+  const isCron = isCronAuthorized(request);
+
+  if (!isAdmin && !isCron) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    const isAdmin = await isAdminAuthenticated();
-    const isCron = isCronAuthorized(request);
-
-    if (!isAdmin && !isCron) {
-      if (!canRunAutoRefresh()) {
-        return NextResponse.json({
-          refreshed: 0,
-          failed: 0,
-          skipped: 0,
-          total: 0,
-          handles: [],
-          errors: [],
-          message: "Auto-refresh cooldown active",
-        });
-      }
-    }
-
     const body = await request.json().catch(() => ({}));
     const requestedLimit =
       typeof body.limit === "number" ? body.limit : parseInt(String(body.limit ?? ""), 10);
 
-    let limit = 3;
-    if (isAdmin || isCron) {
-      limit = Number.isFinite(requestedLimit) ? Math.min(requestedLimit, 50) : 10;
-    } else {
-      limit = Number.isFinite(requestedLimit) ? Math.min(requestedLimit, 3) : 3;
-    }
-
+    const limit = Number.isFinite(requestedLimit) ? Math.min(requestedLimit, 50) : 10;
     const activeOnly = body.activeOnly !== false;
     const summary = await refreshStaleCreators({ limit, activeOnly });
 

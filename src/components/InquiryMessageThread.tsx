@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Send } from "lucide-react";
 import type { InquiryMessage } from "@/lib/inquiry-types";
 import { usePolling } from "@/lib/use-polling";
@@ -8,9 +8,14 @@ import { usePolling } from "@/lib/use-polling";
 interface InquiryMessageThreadProps {
   inquiryId: string;
   viewerRole: "BRAND" | "CREATOR";
+  refreshToken?: string;
 }
 
-export function InquiryMessageThread({ inquiryId, viewerRole }: InquiryMessageThreadProps) {
+export function InquiryMessageThread({
+  inquiryId,
+  viewerRole,
+  refreshToken,
+}: InquiryMessageThreadProps) {
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
@@ -23,6 +28,10 @@ export function InquiryMessageThread({ inquiryId, viewerRole }: InquiryMessageTh
   }, [inquiryId]);
 
   const { data: messages, loading, refresh } = usePolling(fetchMessages, 10000);
+
+  useEffect(() => {
+    if (refreshToken) void refresh();
+  }, [refreshToken, refresh]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();

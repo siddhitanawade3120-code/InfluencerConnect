@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { enrichInquiry } from "@/lib/inquiry-serializer";
-import { notifyNewInquiry } from "@/lib/inquiry-notifications";
+import { scheduleNewInquiryEmail } from "@/lib/schedule-inquiry-email";
 import { isValidObjectId } from "@/lib/mongodb";
 import { isRegisteredCreator } from "@/lib/creator-registry";
 
@@ -193,7 +193,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const emailNotify = await notifyNewInquiry({
+    scheduleNewInquiryEmail({
       inquiryId: inquiry.id,
       brandId: user.id,
       creatorId,
@@ -201,14 +201,11 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      {
-        ...enrichInquiry(inquiry, {
-          creator,
-          brand: user,
-          messageCount: 1,
-        }),
-        emailNotify,
-      },
+      enrichInquiry(inquiry, {
+        creator,
+        brand: user,
+        messageCount: 1,
+      }),
       { status: 201 }
     );
   } catch (err) {
